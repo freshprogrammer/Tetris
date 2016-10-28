@@ -1,3 +1,4 @@
+//scene and graphics 
 var canvasID = "myCanvas";
 var canvas;
 var rootTimerObject;
@@ -7,23 +8,33 @@ var lastTickTime = 0;
 var gameWidth;
 var gameHeight;
 
+var soundEnabled = false;
+
+//fps tracking
 var fpsInterval = 1000;
 var framesThisInterval = 0;
 var lastIntervalFPS = -1;
 var lastIntervalEndTime = 0;
 
+//input
 var keysPressed = [];
 var oneTimeKeys = [48];
 var oneTimeKeysActive = [];
 var gameInput = new GameInput();
 
-var player;
-var level;
-var collisionSystemRendered = true;
-var collisionSystem;
-
+//demo vairables
 var demoX = 1;
 var demoRight = true;
+
+//tetris game timing
+var minPieceDropTime = 50;
+var maxPieceDropTime = 1000;
+var pieceDropTime = maxPieceDropTime;
+var timeSinceLastStep = 0;
+var inputMoveTime = 250;
+var timeSinceLastInput = 0;
+
+//game variables
 
 function gameBootstrap()
 {	
@@ -44,8 +55,10 @@ function gameBootstrap()
 
 function loadAssets()
 {
-	Player.image = new Image();
-	Player.image.src = 'assets/pics/player/001_attackNN_01.png';
+	backgroundImage = new Image();
+	backgroundImage.src = 'assets/pics/Background2.jpg';
+	blockImage = new Image();
+	blockImage.src = 'assets/pics/block1.jpg';
 }
 
 function mouseMove(event)
@@ -91,44 +104,35 @@ function keyUp(event)
 
 function processInput(time)
 {
-	gameInput.clearKeys();
+	var currentGameInput = new GameInput();
+	currentGameInput.clearKeys();
 	for	(index = 0; index < keysPressed.length; index++) 
 	{   
-		if(48==keysPressed[index])
-		{//0 key - toggle collision visibility
-			var index2 =oneTimeKeysActive.indexOf(keysPressed[index]);
-			if (index2 <=-1) 
-			{
-				collisionSystemRendered = !collisionSystemRendered;
-				oneTimeKeysActive.push(keysPressed[index]);
-			}
-		}
-		else if(keysPressed[index]==87 || keysPressed[index]==38)//w and up
-			gameInput.UpPressed = true;
-		else if(keysPressed[index]==83 || keysPressed[index]==40)//s and down
-			gameInput.DownPressed = true;
-		else if(keysPressed[index]==68 || keysPressed[index]==39)//d and right
-			gameInput.RightPressed = true;
-		else if(keysPressed[index]==65 || keysPressed[index]==37)//a and left
-			gameInput.LeftPressed = true;
+		if(keysPressed[index]==40)//down
+			currentGameInput.DownPressed = true;
+		else if(keysPressed[index]==39)//right
+			currentGameInput.RightPressed = true;
+		else if(keysPressed[index]==37)//left
+			currentGameInput.LeftPressed = true;
+		else if(keysPressed[index]==27)//Esc
+			currentGameInput.PausePressed = true;
 	}
 	
+	newDownPressed = (currentGameInput.DownPressed && !gameInput.DownPressed);
+	newRightPressed = (currentGameInput.RightPressed && !gameInput.RightPressed);
+	newLeftPressed = (currentGameInput.LeftPressed && !gameInput.LeftPressed);
+	newPausePressed = (currentGameInput.PausePressed && !gameInput.PausePressed);
 }
 
 function gameStart()
 {
 	//setup game for first run
 	//systems
-	collisionSystem = new CollisionSystem();
-	
-	level = new Level();
-	level.create();
 	
 	//game objects
-	player = new Player();
-	player.X = 100;
-	player.Y = 100;
 	
+	//start clock
+	gameInput.clearKeys();
 	lastTickTime = window.performance.now();
 	tick();
 	rootTimerObject = setInterval(function(){tick();}, tickDelay);
@@ -169,11 +173,11 @@ function renderDemo(context)
 
 	// Fill with gradient
 	context.fillStyle = grd;
-	//ctx.fillRect(0,0,gameWidth,gameHeight);
+	context.fillRect(0,0,gameWidth,gameHeight);
 	
 	context.font = '40pt Calibri';
 	context.fillStyle = 'black';
-	context.fillText("Gradient X:"+demoX,10,90);
+	context.fillText("Gradient X:"+demoX,demoX,90);
 }
 
 function tick()
@@ -193,19 +197,39 @@ function tick()
 	
 	update(timeDif);
 	draw(timeDif);
-	collisionSystem.clearFrame();
 	
 	lastTickTime = window.performance.now();
 }
+
+var blockSize = 26;
+var boardWidth = 10;
+var boardHeight = 20;
+var boardPos = new Point(200,100);
+var mousePos = new Point(0,0);
+var pieceSlot = new Point(0,0);
 
 function update(time)
 {
 	processInput(time);
 	
-	player.update(time);
-	level.update(time);
-	
-	collisionSystem.update(time);
+	//update game
+	timeSinceLastStep+=time;
+	if(timeSinceLastStep>=pieceDropTime)
+	{
+		timeSinceLastStep = 0;
+		if(pieceSlot.Y<boardHeight-1)
+		{
+			pieceSlot.Y +=1;
+		}
+		else
+		{
+			//snap to slot
+			if(soundEnabled)
+				playBeepData();
+			pieceSlot.X++;
+			pieceSlot.Y=0;
+		}
+	}
 }
 
 function drawFPS(context)
@@ -231,13 +255,18 @@ function draw(time)
 	
 	context.clearRect (0,0,gameWidth,gameHeight);
 
-	//renderDemo(context);
+	renderDemo(context);
 	drawFPS(context);
 	
 	//render game
-	player.draw(context);
-	level.draw(context);
+	//background
+	context.drawImage(backgroundImage, boardPos.X,boardPos.Y);
 	
-	if(collisionSystemRendered)
-		collisionSystem.draw(context);
+	var piecePos = getSlotPos(pieceSlot.X,pieceSlot.Y);
+	context.drawImage(blockImage, piecePos.X,piecePos.Y);
+}
+
+function getSlotPos(slotX, slotY)
+{
+	return new Point(slotX*blockSize + boardPos.X, slotY*blockSize + boardPos.Y);
 }

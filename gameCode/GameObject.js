@@ -14,16 +14,6 @@ GameObject.prototype.update=function(time)
 	
 };
 
-GameObject.prototype.createCollisionObject=function()
-{
-	return new CollisionRectangle(this.X,this.Y,this.Width,this.Height,this);
-};
-
-GameObject.prototype.createCollisionObjectWithPadding=function(padding)
-{
-	return new CollisionRectangle(this.X-padding,this.Y-padding,this.Width+padding*2,this.Height+padding*2,this);
-};
-
 GameObject.prototype.move=function(dx, dy)
 {
 	this.X+=dx;
@@ -40,10 +30,6 @@ GameObject.prototype.moveToDelta=function(dx, dy)
 	this.Y+=dy;
 };
 
-GameObject.prototype.toString=function()
-{
-	return '[GameObject at ('+this.X+','+this.Y+')]';
-};
 GameObject.prototype.toString=function()
 {
 	return '[GameObject at ('+this.X+','+this.Y+')]';
