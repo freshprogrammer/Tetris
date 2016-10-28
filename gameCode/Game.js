@@ -162,7 +162,7 @@ function processInput(time)
 			currentGameInput.PausePressed = true;
 	}
 	
-	if(currentGameInput.DownPressed && !gameInput.DownPressed)   gameInput.DownUnHandled = true;
+	if(currentGameInput.DownPressed)   gameInput.DownUnHandled = true;
 	if(currentGameInput.LeftPressed && !gameInput.LeftPressed)   gameInput.LeftUnHandled = true;
 	if(currentGameInput.RightPressed && !gameInput.RightPressed) gameInput.RightUnHandled = true;
 	if(currentGameInput.PausePressed && !gameInput.PausePressed) gameInput.PauseUnHandled = true;
