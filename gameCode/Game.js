@@ -472,6 +472,20 @@ function draw(time)
 	//active piece
 	var piecePos = getSlotPos(pieceSlot.X,pieceSlot.Y);
 	context.drawImage(getBlockImage(pieceSlotType), piecePos.X,piecePos.Y);
+	
+	if(gamePaused)
+	{
+		var size = 72;
+		var loc = new Point(boardPos.X,boardPos.Y+boardHeight*blockSize/2+size/2)
+		context.font=size+"px verdana";
+		context.shadowColor="black";
+		context.shadowBlur=7;
+		context.lineWidth=5;
+		context.strokeText("Paused",loc.X,loc.Y);
+		context.shadowBlur=0;
+		context.fillStyle="white";
+		context.fillText("Paused",loc.X,loc.Y);
+	}
 }
 
 function getBlockImage(slot)
