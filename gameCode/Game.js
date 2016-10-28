@@ -167,6 +167,10 @@ function processInput(time)
 			currentGameInput.PausePressed = true;
 		else if(keysPressed[index]==77)//M key
 			currentGameInput.SoundKeyPressed = true;
+		else if(keysPressed[index]==90)//Z key
+			currentGameInput.RotLeftPressed = true;
+		else if(keysPressed[index]==88)//X key
+			currentGameInput.RotRightPressed = true;
 	}
 	
 	if(currentGameInput.DownPressed)   gameInput.DownUnHandled = true;
@@ -174,6 +178,8 @@ function processInput(time)
 	if(currentGameInput.RightPressed && !gameInput.RightPressed) gameInput.RightUnHandled = true;
 	if(currentGameInput.PausePressed && !gameInput.PausePressed) gameInput.PauseUnHandled = true;
 	if(currentGameInput.SoundKeyPressed && !gameInput.SoundKeyPressed) soundEnabled = !soundEnabled;
+	if(currentGameInput.RotLeftPressed && !gameInput.RotLeftPressed) gameInput.RotLeftUnHandled = true;
+	if(currentGameInput.RotRightPressed && !gameInput.RotRightPressed) gameInput.RotRightUnHandled = true;
 	
 	if(gameInput.PauseUnHandled)
 	{
@@ -297,6 +303,42 @@ function movePiece(dX,dY)
 		pieceSlot.Y = pieceSlot.Y+dY;
 	}
 	return valid;
+}
+
+function rotatePiece(clockwise)
+{
+	var rotateArea = 3;
+	if(pieceSlotType==7)
+	{
+		//square
+		return
+	}
+	else if(pieceSlotType==1)
+	{
+		//line rotate around 4
+		rotateArea = 4;
+	}
+	
+	for(var i=0; i<4; i++)
+	{
+		if(clockwise)
+		{
+			var x = 2-pieceBlocks[i].Y;
+			var y = pieceBlocks[i].X;
+		}
+		else
+		{
+			var x = pieceBlocks[i].Y;
+			var y = 2-pieceBlocks[i].X;
+		}
+		
+		pieceBlocks[i].X = x;
+		pieceBlocks[i].Y = y;
+	}
+	if(!movePiece(0,0))
+	{
+		rotatePiece(!clockwise);
+	}
 }
 
 function snapPiece()
@@ -465,6 +507,10 @@ function update(time)
 					movePiece(-1,0);
 				if(gameInput.RightUnHandled)
 					movePiece(1,0);
+				if(gameInput.RotRightUnHandled)
+					rotatePiece(false);
+				if(gameInput.RotLeftUnHandled)
+					rotatePiece(true);
 				
 				gameInput.handledInput();
 			}
