@@ -1,7 +1,7 @@
 GameState = {
-    Menu : 1,
-    Playing : 2,
-    Animating : 3
+    Menu : 'Menu',
+    Playing : 'Playing',
+    Animating : 'Animating'
 }
 BoardSlot = {
 	Empty : 0,
@@ -57,9 +57,10 @@ var blockSize = 26;
 var boardWidth = 10;
 var boardHeight = 20;
 var boardPos = new Point(200,100);
-var mousePos = new Point(0,0);
+var boardSlots = Create2DArray(boardWidth);
+clearBoard();
+var pieceSlotType = BoardSlot.Block7;
 var pieceSlot = new Point(0,0);
-var boardSlots = Create2DArray(boardWidth);;
 
 function gameBootstrap()
 {	
@@ -259,15 +260,10 @@ function clearBoard()
 
 function movePiece(dX,dY)
 {
-	var newX = pieceSlot.X-dX;
-	var newY = pieceSlot.Y-dY;
+	var newX = pieceSlot.X+dX;
+	var newY = pieceSlot.Y+dY;
 	
-	var valid = false;
-	
-	if(newX>=0 && newX<boardWidth)
-		valid = true;
-	if(newY>=0 && newY<boardHeight)
-		valid = true;
+	var valid = (newX>=0 && newX<boardWidth && newY>=0 && newY<boardHeight);
 	
 	if(valid)
 	{
@@ -279,6 +275,18 @@ function movePiece(dX,dY)
 		pieceSlot.Y = newY;
 	}
 	return valid;
+}
+
+function snapPiece()
+{
+	boardSlots[pieceSlot.X][pieceSlot.Y] = pieceSlotType;
+}
+
+function spawnNewPiece()
+{
+	pieceSlot = new Point(4,0);
+	pieceSlotType = BoardSlot.Block6;
+	return true;
 }
 
 function update(time)
@@ -308,11 +316,11 @@ function update(time)
 				timeSinceLastInput = 0;
 				//handle pressed keys
 				if(gameInput.DownUnHandled)
-					movePiece(0,-1);
+					movePiece(0,1);
 				if(gameInput.LeftUnHandled)
-					movePiece(1,0);
-				if(gameInput.RightUnHandled)
 					movePiece(-1,0);
+				if(gameInput.RightUnHandled)
+					movePiece(1,0);
 				
 				gameInput.handledInput();
 			}
@@ -323,12 +331,13 @@ function update(time)
 			{
 				timeSinceLastStep = 0;
 					
-				if(!movePiece(0,-1))
+				if(!movePiece(0,1))
 				{
 					//snap to slot
+					snapPiece();
+					spawnNewPiece()
 					if(soundEnabled)
 						playBeepData();
-					pieceSlot.Y=0;
 				}
 			}
 		}
@@ -376,54 +385,31 @@ function draw(time)
 	context.drawImage(backgroundImage, boardPos.X,boardPos.Y);
 	
 	var piecePos = getSlotPos(pieceSlot.X,pieceSlot.Y);
-	context.drawImage(block1Image, piecePos.X,piecePos.Y);
+	context.drawImage(getBlockImage(pieceSlotType), piecePos.X,piecePos.Y);
 	
 	//draw board
 	for (var x = 0; x < boardWidth; x++) 
 	{
 		for (var y = 0; y < boardHeight; y++) 
 		{
-			if(boardSlots[x][y]==BoardSlot.Empty)
-			{
-				
-			}
-			else if(boardSlots[x][y]==BoardSlot.Block1)
-			{
-				var blockPos = getSlotPos(x,y);
-				context.drawImage(block1Image, blockPos.X,blockPos.Y);
-			}
-			else if(boardSlots[x][y]==BoardSlot.Block2)
-			{
-				var blockPos = getSlotPos(x,y);
-				context.drawImage(block2Image, blockPos.X,blockPos.Y);
-			}
-			else if(boardSlots[x][y]==BoardSlot.Block3)
-			{
-				var blockPos = getSlotPos(x,y);
-				context.drawImage(block3Image, blockPos.X,blockPos.Y);
-			}
-			else if(boardSlots[x][y]==BoardSlot.Block4)
-			{
-				var blockPos = getSlotPos(x,y);
-				context.drawImage(block4Image, blockPos.X,blockPos.Y);
-			}
-			else if(boardSlots[x][y]==BoardSlot.Block5)
-			{
-				var blockPos = getSlotPos(x,y);
-				context.drawImage(block5Image, blockPos.X,blockPos.Y);
-			}
-			else if(boardSlots[x][y]==BoardSlot.Block6)
-			{
-				var blockPos = getSlotPos(x,y);
-				context.drawImage(block6Image, blockPos.X,blockPos.Y);
-			}
-			else if(boardSlots[x][y]==BoardSlot.Block7)
-			{
-				var blockPos = getSlotPos(x,y);
-				context.drawImage(block7Image, blockPos.X,blockPos.Y);
-			}
+			var blockPos = getSlotPos(x,y);
+			var img = getBlockImage(boardSlots[x][y]);
+			if(img!=null)
+				context.drawImage(getBlockImage(boardSlots[x][y]), blockPos.X,blockPos.Y);
 		}
 	}
+}
+
+function getBlockImage(slot)
+{
+	if(slot==BoardSlot.Block1)return block1Image;
+	if(slot==BoardSlot.Block2)return block2Image;
+	if(slot==BoardSlot.Block3)return block3Image;
+	if(slot==BoardSlot.Block4)return block4Image;
+	if(slot==BoardSlot.Block5)return block5Image;
+	if(slot==BoardSlot.Block6)return block6Image;
+	if(slot==BoardSlot.Block7)return block7Image;
+	return null;
 }
 
 function getSlotPos(slotX, slotY)
