@@ -64,7 +64,7 @@ var pieceSlot = new Point(0,0);
 
 //scoring
 var score = 0;
-var linesCleared = 0;
+var totalLinesCleared = 0;
 var level = 1;
 var scoredTetrisLast = false;
 
@@ -324,6 +324,8 @@ function checkAndClearLines()
 	}
 	if(linesCleared>0)
 		scoreLinesClear(linesCleared);
+	totalLinesCleared+=linesCleared;
+	level = Math.floor(totalLinesCleared/10)+1;
 	return linesCleared;
 }
 
@@ -349,7 +351,7 @@ function resetScore()
 {
 	score = 0;
 	level = 1;
-	linesCleared = 0;
+	totalLinesCleared = 0;
 	scoredTetrisLast = false;
 }
 
@@ -432,7 +434,8 @@ function drawFPS(context)
 	context.fillText("Keys:"+keysPressed,           xPos,yPos+ySeperation*2);
 	context.fillText("Input:"+gameInput,           xPos,yPos+ySeperation*3);
 	context.fillText("paused:"+gamePaused,           xPos,yPos+ySeperation*4);
-	context.fillText("Score:"+score,           xPos,yPos+ySeperation*5);
+	context.fillText("Level:"+level,           xPos,yPos+ySeperation*5);
+	context.fillText("Score:"+score,           xPos,yPos+ySeperation*6);
 }
 
 function draw(time)
