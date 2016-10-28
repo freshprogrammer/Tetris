@@ -61,6 +61,11 @@ var boardSlots = Create2DArray(boardWidth);
 clearBoard();
 var pieceSlotType = BoardSlot.Block7;
 var pieceSlot = new Point(0,0);
+var pieceBlocks = [4]
+pieceBlocks[0] = new Point(1,0);
+pieceBlocks[1] = new Point(1,1);
+pieceBlocks[2] = new Point(1,2);
+pieceBlocks[3] = new Point(1,3);
 
 //scoring
 var score = 0;
@@ -193,6 +198,8 @@ function gameStart()
 	clearBoard();
 	resetScore();
 	gameState = GameState.Playing;
+	
+	spawnNewPiece();
 }
 
 function gameStop()
@@ -276,26 +283,29 @@ function getRandomBlockPiece()
 
 function movePiece(dX,dY)
 {
-	var newX = pieceSlot.X+dX;
-	var newY = pieceSlot.Y+dY;
-	
-	var valid = (newX>=0 && newX<boardWidth && newY>=0 && newY<boardHeight);
-	
-	if(valid)
+	var valid = true;
+	for(var i=0; i<4; i++)
 	{
-		valid = boardSlots[newX][newY]==BoardSlot.Empty;
+		var slot = new Point(pieceSlot.X+pieceBlocks[i].X+dX,pieceSlot.Y+pieceBlocks[i].Y+dY);
+		
+		valid = valid && (slot.X>=0 && slot.X<boardWidth && slot.Y>=0 && slot.Y<boardHeight);
+		valid = valid && boardSlots[slot.X][slot.Y]==BoardSlot.Empty;
 	}
 	if(valid)
 	{
-		pieceSlot.X = newX;
-		pieceSlot.Y = newY;
+		pieceSlot.X = pieceSlot.X+dX;
+		pieceSlot.Y = pieceSlot.Y+dY;
 	}
 	return valid;
 }
 
 function snapPiece()
 {
-	boardSlots[pieceSlot.X][pieceSlot.Y] = pieceSlotType;
+	for(var i=0; i<4; i++)
+	{
+		var slot = new Point(pieceSlot.X+pieceBlocks[i].X,pieceSlot.Y+pieceBlocks[i].Y);
+		boardSlots[slot.X][slot.Y] = pieceSlotType;
+	}
 	scorePiecePlacement();
 	var linesCleared = checkAndClearLines();
 	if(soundEnabled)
@@ -377,6 +387,57 @@ function spawnNewPiece()
 {
 	pieceSlot = new Point(4,0);
 	pieceSlotType = getRandomBlockPiece();
+	if(pieceSlotType==1)
+	{//line
+		pieceBlocks[0] = new Point(1,0);
+		pieceBlocks[1] = new Point(1,1);
+		pieceBlocks[2] = new Point(1,2);
+		pieceBlocks[3] = new Point(1,3);
+	}
+	if(pieceSlotType==2)
+	{//T
+		pieceBlocks[0] = new Point(1,0);
+		pieceBlocks[1] = new Point(1,1);
+		pieceBlocks[2] = new Point(1,2);
+		pieceBlocks[3] = new Point(2,1);
+	}
+	if(pieceSlotType==3)
+	{//L
+		pieceBlocks[0] = new Point(1,0);
+		pieceBlocks[1] = new Point(1,1);
+		pieceBlocks[2] = new Point(1,2);
+		pieceBlocks[3] = new Point(0,0);
+	}
+	if(pieceSlotType==4)
+	{//backwards L
+		pieceBlocks[0] = new Point(1,0);
+		pieceBlocks[1] = new Point(1,1);
+		pieceBlocks[2] = new Point(1,2);
+		pieceBlocks[3] = new Point(2,0);
+	}
+	if(pieceSlotType==5)
+	{//Z
+		pieceBlocks[0] = new Point(0,0);
+		pieceBlocks[1] = new Point(1,0);
+		pieceBlocks[2] = new Point(1,1);
+		pieceBlocks[3] = new Point(2,1);
+	}
+	if(pieceSlotType==6)
+	{//backwards Z
+		pieceBlocks[0] = new Point(0,1);
+		pieceBlocks[1] = new Point(1,1);
+		pieceBlocks[2] = new Point(1,0);
+		pieceBlocks[3] = new Point(2,0);
+	}
+	if(pieceSlotType==7)
+	{//square
+		pieceBlocks[0] = new Point(0,0);
+		pieceBlocks[1] = new Point(0,1);
+		pieceBlocks[2] = new Point(1,0);
+		pieceBlocks[3] = new Point(1,1);
+	}
+	
+	
 	return true;
 }
 
@@ -476,8 +537,11 @@ function draw(time)
 	}
 	
 	//active piece
-	var piecePos = getSlotPos(pieceSlot.X,pieceSlot.Y);
-	context.drawImage(getBlockImage(pieceSlotType), piecePos.X,piecePos.Y);
+	for(var i=0; i<4; i++)
+	{
+		var piecePos = getSlotPos(pieceSlot.X+pieceBlocks[i].X,pieceSlot.Y+pieceBlocks[i].Y);
+		context.drawImage(getBlockImage(pieceSlotType), piecePos.X,piecePos.Y);
+	}
 	
 	if(gamePaused)
 	{
