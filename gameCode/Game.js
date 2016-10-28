@@ -8,6 +8,8 @@ var lastTickTime = 0;
 var gameWidth;
 var gameHeight;
 
+var soundEnabled = false;
+
 //fps tracking
 var fpsInterval = 1000;
 var framesThisInterval = 0;
@@ -26,9 +28,11 @@ var demoRight = true;
 
 //tetris game timing
 var minPieceDropTime = 50;
-var maxPieceDropTime = 500;
+var maxPieceDropTime = 1000;
 var pieceDropTime = maxPieceDropTime;
 var timeSinceLastStep = 0;
+var inputMoveTime = 250;
+var timeSinceLastInput = 0;
 
 //game variables
 
@@ -100,28 +104,24 @@ function keyUp(event)
 
 function processInput(time)
 {
-	gameInput.clearKeys();
+	var currentGameInput = new GameInput();
+	currentGameInput.clearKeys();
 	for	(index = 0; index < keysPressed.length; index++) 
 	{   
-		if(48==keysPressed[index])
-		{//0 key - toggle collision visibility
-			var index2 =oneTimeKeysActive.indexOf(keysPressed[index]);
-			if (index2 <=-1) 
-			{
-				collisionSystemRendered = !collisionSystemRendered;
-				oneTimeKeysActive.push(keysPressed[index]);
-			}
-		}
-		else if(keysPressed[index]==87 || keysPressed[index]==38)//w and up
-			gameInput.UpPressed = true;
-		else if(keysPressed[index]==83 || keysPressed[index]==40)//s and down
-			gameInput.DownPressed = true;
-		else if(keysPressed[index]==68 || keysPressed[index]==39)//d and right
-			gameInput.RightPressed = true;
-		else if(keysPressed[index]==65 || keysPressed[index]==37)//a and left
-			gameInput.LeftPressed = true;
+		if(keysPressed[index]==40)//down
+			currentGameInput.DownPressed = true;
+		else if(keysPressed[index]==39)//right
+			currentGameInput.RightPressed = true;
+		else if(keysPressed[index]==37)//left
+			currentGameInput.LeftPressed = true;
+		else if(keysPressed[index]==27)//Esc
+			currentGameInput.PausePressed = true;
 	}
 	
+	newDownPressed = (currentGameInput.DownPressed && !gameInput.DownPressed);
+	newRightPressed = (currentGameInput.RightPressed && !gameInput.RightPressed);
+	newLeftPressed = (currentGameInput.LeftPressed && !gameInput.LeftPressed);
+	newPausePressed = (currentGameInput.PausePressed && !gameInput.PausePressed);
 }
 
 function gameStart()
@@ -132,6 +132,7 @@ function gameStart()
 	//game objects
 	
 	//start clock
+	gameInput.clearKeys();
 	lastTickTime = window.performance.now();
 	tick();
 	rootTimerObject = setInterval(function(){tick();}, tickDelay);
@@ -217,7 +218,17 @@ function update(time)
 	{
 		timeSinceLastStep = 0;
 		if(pieceSlot.Y<boardHeight-1)
+		{
 			pieceSlot.Y +=1;
+		}
+		else
+		{
+			//snap to slot
+			if(soundEnabled)
+				playBeepData();
+			pieceSlot.X++;
+			pieceSlot.Y=0;
+		}
 	}
 }
 
