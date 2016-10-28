@@ -1,4 +1,13 @@
 //functions
+function Create2DArray(rows) {
+  var arr = [];
+
+  for (var i=0;i<rows;i++) {
+     arr[i] = [];
+  }
+
+  return arr;
+}
 function getMousePos(canvas, evt) 
 {
 	var rect = canvas.getBoundingClientRect();
@@ -36,6 +45,25 @@ GameInput.prototype.clearKeys=function()
 	this.LeftPressed = false;
 	this.RightPressed = false;
 	this.PausePressed = false;
+	
+	this.DownUnHandled = false;
+	this.LeftUnHandled = false;
+	this.RightUnHandled = false;
+	this.PauseUnHandled = false;
+};
+GameInput.prototype.handledInput=function()
+{
+	this.DownUnHandled = false;
+	this.LeftUnHandled = false;
+	this.RightUnHandled = false;
+	this.PauseUnHandled = false;
+};
+GameInput.prototype.updatePressed=function(otherInput)
+{
+	this.DownPressed = otherInput.DownPressed;
+	this.LeftPressed = otherInput.LeftPressed;
+	this.RightPressed = otherInput.RightPressed;
+	this.PausePressed = otherInput.PausePressed;
 };
 GameInput.prototype.toString=function()
 {

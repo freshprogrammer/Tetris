@@ -5,7 +5,8 @@
 - n/a
 
 ### Controls
-- WASD & arrow keys to move
+- arrow keys to move
+- Esc to pause
 
 
 ### Note

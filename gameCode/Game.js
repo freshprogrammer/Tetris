@@ -1,3 +1,19 @@
+GameState = {
+    Menu : 'Menu',
+    Playing : 'Playing',
+    Animating : 'Animating'
+}
+BoardSlot = {
+	Empty : 0,
+	Block1 : 1,
+	Block2 : 2,
+	Block3 : 3,
+	Block4 : 4,
+	Block5 : 5,
+	Block6 : 6,
+	Block7 : 7
+}
+
 //scene and graphics 
 var canvasID = "myCanvas";
 var canvas;
@@ -8,7 +24,7 @@ var lastTickTime = 0;
 var gameWidth;
 var gameHeight;
 
-var soundEnabled = false;
+var soundEnabled = true;
 
 //fps tracking
 var fpsInterval = 1000;
@@ -31,10 +47,26 @@ var minPieceDropTime = 50;
 var maxPieceDropTime = 1000;
 var pieceDropTime = maxPieceDropTime;
 var timeSinceLastStep = 0;
-var inputMoveTime = 250;
+var inputMoveTime = minPieceDropTime;
 var timeSinceLastInput = 0;
+var gameState = GameState.Menu;
+var gamePaused = false;
 
 //game variables
+var blockSize = 26;
+var boardWidth = 10;
+var boardHeight = 20;
+var boardPos = new Point(200,100);
+var boardSlots = Create2DArray(boardWidth);
+clearBoard();
+var pieceSlotType = BoardSlot.Block7;
+var pieceSlot = new Point(0,0);
+
+//scoring
+var score = 0;
+var linesCleared = 0;
+var level = 1;
+var scoredTetrisLast = false;
 
 function gameBootstrap()
 {	
@@ -57,8 +89,20 @@ function loadAssets()
 {
 	backgroundImage = new Image();
 	backgroundImage.src = 'assets/pics/Background2.jpg';
-	blockImage = new Image();
-	blockImage.src = 'assets/pics/block1.jpg';
+	block1Image = new Image();
+	block1Image.src = 'assets/pics/block1.jpg';
+	block2Image = new Image();
+	block2Image.src = 'assets/pics/block2.jpg';
+	block3Image = new Image();
+	block3Image.src = 'assets/pics/block3.jpg';
+	block4Image = new Image();
+	block4Image.src = 'assets/pics/block4.jpg';
+	block5Image = new Image();
+	block5Image.src = 'assets/pics/block5.jpg';
+	block6Image = new Image();
+	block6Image.src = 'assets/pics/block6.jpg';
+	block7Image = new Image();
+	block7Image.src = 'assets/pics/block7.jpg';
 }
 
 function mouseMove(event)
@@ -110,18 +154,26 @@ function processInput(time)
 	{   
 		if(keysPressed[index]==40)//down
 			currentGameInput.DownPressed = true;
-		else if(keysPressed[index]==39)//right
-			currentGameInput.RightPressed = true;
 		else if(keysPressed[index]==37)//left
 			currentGameInput.LeftPressed = true;
+		else if(keysPressed[index]==39)//right
+			currentGameInput.RightPressed = true;
 		else if(keysPressed[index]==27)//Esc
 			currentGameInput.PausePressed = true;
 	}
 	
-	newDownPressed = (currentGameInput.DownPressed && !gameInput.DownPressed);
-	newRightPressed = (currentGameInput.RightPressed && !gameInput.RightPressed);
-	newLeftPressed = (currentGameInput.LeftPressed && !gameInput.LeftPressed);
-	newPausePressed = (currentGameInput.PausePressed && !gameInput.PausePressed);
+	if(currentGameInput.DownPressed)   gameInput.DownUnHandled = true;
+	if(currentGameInput.LeftPressed && !gameInput.LeftPressed)   gameInput.LeftUnHandled = true;
+	if(currentGameInput.RightPressed && !gameInput.RightPressed) gameInput.RightUnHandled = true;
+	if(currentGameInput.PausePressed && !gameInput.PausePressed) gameInput.PauseUnHandled = true;
+	
+	if(gameInput.PauseUnHandled)
+	{
+		gamePaused = !gamePaused;
+		gameInput.PauseUnHandled = false;
+		gameInput.clearKeys();//clear keys pressed while paused
+	}
+	gameInput.updatePressed(currentGameInput);
 }
 
 function gameStart()
@@ -132,10 +184,12 @@ function gameStart()
 	//game objects
 	
 	//start clock
-	gameInput.clearKeys();
 	lastTickTime = window.performance.now();
 	tick();
 	rootTimerObject = setInterval(function(){tick();}, tickDelay);
+	clearBoard();
+	resetScore();
+	gameState = GameState.Playing;
 }
 
 function gameStop()
@@ -201,33 +255,163 @@ function tick()
 	lastTickTime = window.performance.now();
 }
 
-var blockSize = 26;
-var boardWidth = 10;
-var boardHeight = 20;
-var boardPos = new Point(200,100);
-var mousePos = new Point(0,0);
-var pieceSlot = new Point(0,0);
+function clearBoard()
+{
+	for (var x = 0; x < boardWidth; x++) 
+	{
+		for (var y = 0; y < boardHeight; y++) 
+		{
+			boardSlots[x][y]=BoardSlot.Empty;
+		}
+	}
+}
+
+function getRandomBlockPiece()
+{
+	return Math.floor(Math.random()*7)+1;
+}
+
+function movePiece(dX,dY)
+{
+	var newX = pieceSlot.X+dX;
+	var newY = pieceSlot.Y+dY;
+	
+	var valid = (newX>=0 && newX<boardWidth && newY>=0 && newY<boardHeight);
+	
+	if(valid)
+	{
+		valid = boardSlots[newX][newY]==BoardSlot.Empty;
+	}
+	if(valid)
+	{
+		pieceSlot.X = newX;
+		pieceSlot.Y = newY;
+	}
+	return valid;
+}
+
+function snapPiece()
+{
+	boardSlots[pieceSlot.X][pieceSlot.Y] = pieceSlotType;
+	scorePiecePlacement();
+	var linesCleared = checkAndClearLines();
+	if(soundEnabled)
+		playBeepData();
+	spawnNewPiece()
+}
+
+function checkAndClearLines()
+{
+	//todo - remove full lines
+	var linesCleared = 0;
+	for (var y = 0; y < boardHeight; y++)
+	{
+		var fullLine = true;
+		for (var x = 0; x < boardWidth; x++)
+		{
+			if(boardSlots[x][y]==BoardSlot.Empty)
+			{
+				fullLine = false;
+				break;
+			}
+		}
+		if(fullLine)
+		{
+			clearLine(y);
+			y--;//prevent skips
+			linesCleared++;
+		}
+	}
+	if(linesCleared>0)
+		scoreLinesClear(linesCleared);
+	return linesCleared;
+}
+
+function clearLine(clearY)
+{
+	//clear
+	for (var x = 0; x < boardWidth; x++)
+	{
+		boardSlots[x][clearY]=BoardSlot.Empty;
+	}
+	//move down
+	for (var y = clearY; y > 0; y--)
+	{
+		for (var x = 0; x < boardWidth; x++)
+		{
+			boardSlots[x][y]=boardSlots[x][y-1];
+			boardSlots[x][y-1]=BoardSlot.Empty;
+		}
+	}
+}
+
+function resetScore()
+{
+	score = 0;
+	level = 1;
+	linesCleared = 0;
+	scoredTetrisLast = false;
+}
+
+function scorePiecePlacement()
+{
+	score+=10;
+}
+
+function scoreLinesClear(lines)
+{
+	var tetris = (lines==4);
+	if(tetris && scoredTetrisLast)
+		score+=1200;//back to back tetrises
+	else
+		score+=Math.pow(2,lines-1)*100;
+	scoredTetrisLast = tetris;
+}
+
+function spawnNewPiece()
+{
+	pieceSlot = new Point(4,0);
+	pieceSlotType = getRandomBlockPiece();
+	return true;
+}
 
 function update(time)
 {
 	processInput(time);
 	
-	//update game
-	timeSinceLastStep+=time;
-	if(timeSinceLastStep>=pieceDropTime)
+	if(!gamePaused)
 	{
-		timeSinceLastStep = 0;
-		if(pieceSlot.Y<boardHeight-1)
+		if(gameState==GameState.Playing)
 		{
-			pieceSlot.Y +=1;
-		}
-		else
-		{
-			//snap to slot
-			if(soundEnabled)
-				playBeepData();
-			pieceSlot.X++;
-			pieceSlot.Y=0;
+			//update game
+			//step input
+			timeSinceLastInput+=time;
+			if(timeSinceLastInput>=inputMoveTime)
+			{
+				timeSinceLastInput = 0;
+				//handle pressed keys
+				if(gameInput.DownUnHandled)
+				{
+					if(!movePiece(0,1))
+						snapPiece();
+				}
+				if(gameInput.LeftUnHandled)
+					movePiece(-1,0);
+				if(gameInput.RightUnHandled)
+					movePiece(1,0);
+				
+				gameInput.handledInput();
+			}
+			
+			//step Piece
+			timeSinceLastStep+=time;
+			if(timeSinceLastStep>=pieceDropTime)
+			{
+				timeSinceLastStep = 0;
+					
+				if(!movePiece(0,1))
+					snapPiece();
+			}
 		}
 	}
 }
@@ -247,6 +431,8 @@ function drawFPS(context)
 
 	context.fillText("Keys:"+keysPressed,           xPos,yPos+ySeperation*2);
 	context.fillText("Input:"+gameInput,           xPos,yPos+ySeperation*3);
+	context.fillText("paused:"+gamePaused,           xPos,yPos+ySeperation*4);
+	context.fillText("Score:"+score,           xPos,yPos+ySeperation*5);
 }
 
 function draw(time)
@@ -255,15 +441,49 @@ function draw(time)
 	
 	context.clearRect (0,0,gameWidth,gameHeight);
 
-	renderDemo(context);
+	
+	// Create gradient
+	var grd = context.createLinearGradient(5+gameWidth/2,0,5+150/2,5);
+	grd.addColorStop(0,"cyan");
+	grd.addColorStop(1,"red");
+
+	// Fill with gradient
+	context.fillStyle = grd;
+	context.fillRect(0,0,gameWidth,gameHeight);
+	//renderDemo(context);
 	drawFPS(context);
 	
 	//render game
 	//background
 	context.drawImage(backgroundImage, boardPos.X,boardPos.Y);
 	
+	//draw board
+	for (var x = 0; x < boardWidth; x++) 
+	{
+		for (var y = 0; y < boardHeight; y++) 
+		{
+			var blockPos = getSlotPos(x,y);
+			var img = getBlockImage(boardSlots[x][y]);
+			if(img!=null)
+				context.drawImage(getBlockImage(boardSlots[x][y]), blockPos.X,blockPos.Y);
+		}
+	}
+	
+	//active piece
 	var piecePos = getSlotPos(pieceSlot.X,pieceSlot.Y);
-	context.drawImage(blockImage, piecePos.X,piecePos.Y);
+	context.drawImage(getBlockImage(pieceSlotType), piecePos.X,piecePos.Y);
+}
+
+function getBlockImage(slot)
+{
+	if(slot==BoardSlot.Block1)return block1Image;
+	if(slot==BoardSlot.Block2)return block2Image;
+	if(slot==BoardSlot.Block3)return block3Image;
+	if(slot==BoardSlot.Block4)return block4Image;
+	if(slot==BoardSlot.Block5)return block5Image;
+	if(slot==BoardSlot.Block6)return block6Image;
+	if(slot==BoardSlot.Block7)return block7Image;
+	return null;
 }
 
 function getSlotPos(slotX, slotY)
