@@ -28,6 +28,7 @@ var demoRight = true;
 var minPieceDropTime = 50;
 var maxPieceDropTime = 500;
 var pieceDropTime = maxPieceDropTime;
+var timeSinceLastStep = 0;
 
 //game variables
 
@@ -50,8 +51,10 @@ function gameBootstrap()
 
 function loadAssets()
 {
-	//Player.image = new Image();
-	//Player.image.src = 'assets/pics/player/001_attackNN_01.png';
+	backgroundImage = new Image();
+	backgroundImage.src = 'assets/pics/Background2.jpg';
+	blockImage = new Image();
+	blockImage.src = 'assets/pics/block1.jpg';
 }
 
 function mouseMove(event)
@@ -197,11 +200,25 @@ function tick()
 	lastTickTime = window.performance.now();
 }
 
+var blockSize = 26;
+var boardWidth = 10;
+var boardHeight = 20;
+var boardPos = new Point(200,100);
+var mousePos = new Point(0,0);
+var pieceSlot = new Point(0,0);
+
 function update(time)
 {
 	processInput(time);
 	
 	//update game
+	timeSinceLastStep+=time;
+	if(timeSinceLastStep>=pieceDropTime)
+	{
+		timeSinceLastStep = 0;
+		if(pieceSlot.Y<boardHeight-1)
+			pieceSlot.Y +=1;
+	}
 }
 
 function drawFPS(context)
@@ -231,5 +248,14 @@ function draw(time)
 	drawFPS(context);
 	
 	//render game
+	//background
+	context.drawImage(backgroundImage, boardPos.X,boardPos.Y);
 	
+	var piecePos = getSlotPos(pieceSlot.X,pieceSlot.Y);
+	context.drawImage(blockImage, piecePos.X,piecePos.Y);
+}
+
+function getSlotPos(slotX, slotY)
+{
+	return new Point(slotX*blockSize + boardPos.X, slotY*blockSize + boardPos.Y);
 }
