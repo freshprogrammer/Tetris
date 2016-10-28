@@ -62,6 +62,12 @@ clearBoard();
 var pieceSlotType = BoardSlot.Block7;
 var pieceSlot = new Point(0,0);
 
+//scoring
+var score = 0;
+var linesCleared = 0;
+var level = 1;
+var scoredTetrisLast = false;
+
 function gameBootstrap()
 {	
 	canvas = document.getElementById(canvasID);
@@ -165,6 +171,7 @@ function processInput(time)
 	{
 		gamePaused = !gamePaused;
 		gameInput.PauseUnHandled = false;
+		gameInput.clearKeys();//clear keys pressed while paused
 	}
 	gameInput.updatePressed(currentGameInput);
 }
@@ -181,6 +188,7 @@ function gameStart()
 	tick();
 	rootTimerObject = setInterval(function(){tick();}, tickDelay);
 	clearBoard();
+	resetScore();
 	gameState = GameState.Playing;
 }
 
@@ -258,6 +266,11 @@ function clearBoard()
 	}
 }
 
+function getRandomBlockPiece()
+{
+	return Math.floor(Math.random()*7)+1;
+}
+
 function movePiece(dX,dY)
 {
 	var newX = pieceSlot.X+dX;
@@ -280,29 +293,91 @@ function movePiece(dX,dY)
 function snapPiece()
 {
 	boardSlots[pieceSlot.X][pieceSlot.Y] = pieceSlotType;
+	scorePiecePlacement();
+	var linesCleared = checkAndClearLines();
+	if(soundEnabled)
+		playBeepData();
+	spawnNewPiece()
+}
+
+function checkAndClearLines()
+{
+	//todo - remove full lines
+	var linesCleared = 0;
+	for (var y = 0; y < boardHeight; y++)
+	{
+		var fullLine = true;
+		for (var x = 0; x < boardWidth; x++)
+		{
+			if(boardSlots[x][y]==BoardSlot.Empty)
+			{
+				fullLine = false;
+				break;
+			}
+		}
+		if(fullLine)
+		{
+			clearLine(y);
+			y--;//prevent skips
+			linesCleared++;
+		}
+	}
+	if(linesCleared>0)
+		scoreLinesClear(linesCleared);
+	return linesCleared;
+}
+
+function clearLine(clearY)
+{
+	//clear
+	for (var x = 0; x < boardWidth; x++)
+	{
+		boardSlots[x][clearY]=BoardSlot.Empty;
+	}
+	//move down
+	for (var y = clearY; y > 0; y--)
+	{
+		for (var x = 0; x < boardWidth; x++)
+		{
+			boardSlots[x][y]=boardSlots[x][y-1];
+			boardSlots[x][y-1]=BoardSlot.Empty;
+		}
+	}
+}
+
+function resetScore()
+{
+	score = 0;
+	level = 1;
+	linesCleared = 0;
+	scoredTetrisLast = false;
+}
+
+function scorePiecePlacement()
+{
+	score+=10;
+}
+
+function scoreLinesClear(lines)
+{
+	var tetris = (lines==4);
+	if(tetris && scoredTetrisLast)
+		score+=1200;//back to back tetrises
+	else
+		score+=Math.pow(2,lines-1)*100;
+	scoredTetrisLast = tetris;
 }
 
 function spawnNewPiece()
 {
 	pieceSlot = new Point(4,0);
-	pieceSlotType = BoardSlot.Block6;
+	pieceSlotType = getRandomBlockPiece();
 	return true;
 }
 
 function update(time)
 {
 	processInput(time);
-	
-	boardSlots[1][1] = BoardSlot.Block1;
-	boardSlots[2][2] = BoardSlot.Block2;
-	boardSlots[3][3] = BoardSlot.Block3;
-	boardSlots[4][4] = BoardSlot.Block4;
-	boardSlots[5][5] = BoardSlot.Block5;
-	boardSlots[6][6] = BoardSlot.Block6;
-	boardSlots[7][7] = BoardSlot.Block7;
-	boardSlots[0][19] = BoardSlot.Block1;
-	boardSlots[1][19] = BoardSlot.Block1;
-	boardSlots[9][19] = BoardSlot.Block3;
 	
 	if(!gamePaused)
 	{
@@ -316,7 +391,10 @@ function update(time)
 				timeSinceLastInput = 0;
 				//handle pressed keys
 				if(gameInput.DownUnHandled)
-					movePiece(0,1);
+				{
+					if(!movePiece(0,1))
+						snapPiece();
+				}
 				if(gameInput.LeftUnHandled)
 					movePiece(-1,0);
 				if(gameInput.RightUnHandled)
@@ -332,13 +410,7 @@ function update(time)
 				timeSinceLastStep = 0;
 					
 				if(!movePiece(0,1))
-				{
-					//snap to slot
 					snapPiece();
-					spawnNewPiece()
-					if(soundEnabled)
-						playBeepData();
-				}
 			}
 		}
 	}
@@ -360,6 +432,7 @@ function drawFPS(context)
 	context.fillText("Keys:"+keysPressed,           xPos,yPos+ySeperation*2);
 	context.fillText("Input:"+gameInput,           xPos,yPos+ySeperation*3);
 	context.fillText("paused:"+gamePaused,           xPos,yPos+ySeperation*4);
+	context.fillText("Score:"+score,           xPos,yPos+ySeperation*5);
 }
 
 function draw(time)
@@ -384,9 +457,6 @@ function draw(time)
 	//background
 	context.drawImage(backgroundImage, boardPos.X,boardPos.Y);
 	
-	var piecePos = getSlotPos(pieceSlot.X,pieceSlot.Y);
-	context.drawImage(getBlockImage(pieceSlotType), piecePos.X,piecePos.Y);
-	
 	//draw board
 	for (var x = 0; x < boardWidth; x++) 
 	{
@@ -398,6 +468,10 @@ function draw(time)
 				context.drawImage(getBlockImage(boardSlots[x][y]), blockPos.X,blockPos.Y);
 		}
 	}
+	
+	//active piece
+	var piecePos = getSlotPos(pieceSlot.X,pieceSlot.Y);
+	context.drawImage(getBlockImage(pieceSlotType), piecePos.X,piecePos.Y);
 }
 
 function getBlockImage(slot)
