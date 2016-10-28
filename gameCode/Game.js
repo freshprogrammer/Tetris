@@ -3,6 +3,16 @@ GameState = {
     Playing : 2,
     Animating : 3
 }
+BoardSlot = {
+	Empty : 0,
+	Block1 : 1,
+	Block2 : 2,
+	Block3 : 3,
+	Block4 : 4,
+	Block5 : 5,
+	Block6 : 6,
+	Block7 : 7
+}
 
 //scene and graphics 
 var canvasID = "myCanvas";
@@ -14,7 +24,7 @@ var lastTickTime = 0;
 var gameWidth;
 var gameHeight;
 
-var soundEnabled = false;
+var soundEnabled = true;
 
 //fps tracking
 var fpsInterval = 1000;
@@ -35,7 +45,7 @@ var demoRight = true;
 //tetris game timing
 var minPieceDropTime = 50;
 var maxPieceDropTime = 1000;
-var pieceDropTime = minPieceDropTime;
+var pieceDropTime = maxPieceDropTime;
 var timeSinceLastStep = 0;
 var inputMoveTime = minPieceDropTime;
 var timeSinceLastInput = 0;
@@ -49,6 +59,7 @@ var boardHeight = 20;
 var boardPos = new Point(200,100);
 var mousePos = new Point(0,0);
 var pieceSlot = new Point(0,0);
+var boardSlots = Create2DArray(boardWidth);;
 
 function gameBootstrap()
 {	
@@ -71,8 +82,20 @@ function loadAssets()
 {
 	backgroundImage = new Image();
 	backgroundImage.src = 'assets/pics/Background2.jpg';
-	blockImage = new Image();
-	blockImage.src = 'assets/pics/block1.jpg';
+	block1Image = new Image();
+	block1Image.src = 'assets/pics/block1.jpg';
+	block2Image = new Image();
+	block2Image.src = 'assets/pics/block2.jpg';
+	block3Image = new Image();
+	block3Image.src = 'assets/pics/block3.jpg';
+	block4Image = new Image();
+	block4Image.src = 'assets/pics/block4.jpg';
+	block5Image = new Image();
+	block5Image.src = 'assets/pics/block5.jpg';
+	block6Image = new Image();
+	block6Image.src = 'assets/pics/block6.jpg';
+	block7Image = new Image();
+	block7Image.src = 'assets/pics/block7.jpg';
 }
 
 function mouseMove(event)
@@ -156,6 +179,7 @@ function gameStart()
 	lastTickTime = window.performance.now();
 	tick();
 	rootTimerObject = setInterval(function(){tick();}, tickDelay);
+	clearBoard();
 	gameState = GameState.Playing;
 }
 
@@ -222,20 +246,55 @@ function tick()
 	lastTickTime = window.performance.now();
 }
 
+function clearBoard()
+{
+	for (var x = 0; x < boardWidth; x++) 
+	{
+		for (var y = 0; y < boardHeight; y++) 
+		{
+			boardSlots[x][y]=BoardSlot.Empty;
+		}
+	}
+}
+
 function movePiece(dX,dY)
 {
 	var newX = pieceSlot.X-dX;
 	var newY = pieceSlot.Y-dY;
 	
+	var valid = false;
+	
 	if(newX>=0 && newX<boardWidth)
-		pieceSlot.X = newX;
+		valid = true;
 	if(newY>=0 && newY<boardHeight)
+		valid = true;
+	
+	if(valid)
+	{
+		valid = boardSlots[newX][newY]==BoardSlot.Empty;
+	}
+	if(valid)
+	{
+		pieceSlot.X = newX;
 		pieceSlot.Y = newY;
+	}
+	return valid;
 }
 
 function update(time)
 {
 	processInput(time);
+	
+	boardSlots[1][1] = BoardSlot.Block1;
+	boardSlots[2][2] = BoardSlot.Block2;
+	boardSlots[3][3] = BoardSlot.Block3;
+	boardSlots[4][4] = BoardSlot.Block4;
+	boardSlots[5][5] = BoardSlot.Block5;
+	boardSlots[6][6] = BoardSlot.Block6;
+	boardSlots[7][7] = BoardSlot.Block7;
+	boardSlots[0][19] = BoardSlot.Block1;
+	boardSlots[1][19] = BoardSlot.Block1;
+	boardSlots[9][19] = BoardSlot.Block3;
 	
 	if(!gamePaused)
 	{
@@ -263,16 +322,12 @@ function update(time)
 			if(timeSinceLastStep>=pieceDropTime)
 			{
 				timeSinceLastStep = 0;
-				if(pieceSlot.Y<boardHeight-1)
-				{
-					movePiece(0,-1);
-				}
-				else
+					
+				if(!movePiece(0,-1))
 				{
 					//snap to slot
 					if(soundEnabled)
 						playBeepData();
-					pieceSlot.X++;
 					pieceSlot.Y=0;
 				}
 			}
@@ -321,7 +376,54 @@ function draw(time)
 	context.drawImage(backgroundImage, boardPos.X,boardPos.Y);
 	
 	var piecePos = getSlotPos(pieceSlot.X,pieceSlot.Y);
-	context.drawImage(blockImage, piecePos.X,piecePos.Y);
+	context.drawImage(block1Image, piecePos.X,piecePos.Y);
+	
+	//draw board
+	for (var x = 0; x < boardWidth; x++) 
+	{
+		for (var y = 0; y < boardHeight; y++) 
+		{
+			if(boardSlots[x][y]==BoardSlot.Empty)
+			{
+				
+			}
+			else if(boardSlots[x][y]==BoardSlot.Block1)
+			{
+				var blockPos = getSlotPos(x,y);
+				context.drawImage(block1Image, blockPos.X,blockPos.Y);
+			}
+			else if(boardSlots[x][y]==BoardSlot.Block2)
+			{
+				var blockPos = getSlotPos(x,y);
+				context.drawImage(block2Image, blockPos.X,blockPos.Y);
+			}
+			else if(boardSlots[x][y]==BoardSlot.Block3)
+			{
+				var blockPos = getSlotPos(x,y);
+				context.drawImage(block3Image, blockPos.X,blockPos.Y);
+			}
+			else if(boardSlots[x][y]==BoardSlot.Block4)
+			{
+				var blockPos = getSlotPos(x,y);
+				context.drawImage(block4Image, blockPos.X,blockPos.Y);
+			}
+			else if(boardSlots[x][y]==BoardSlot.Block5)
+			{
+				var blockPos = getSlotPos(x,y);
+				context.drawImage(block5Image, blockPos.X,blockPos.Y);
+			}
+			else if(boardSlots[x][y]==BoardSlot.Block6)
+			{
+				var blockPos = getSlotPos(x,y);
+				context.drawImage(block6Image, blockPos.X,blockPos.Y);
+			}
+			else if(boardSlots[x][y]==BoardSlot.Block7)
+			{
+				var blockPos = getSlotPos(x,y);
+				context.drawImage(block7Image, blockPos.X,blockPos.Y);
+			}
+		}
+	}
 }
 
 function getSlotPos(slotX, slotY)
