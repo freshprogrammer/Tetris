@@ -7,6 +7,7 @@
 ### Controls
 - arrow keys to move
 - Esc to pause
+- M to mute
 
 
 ### Note

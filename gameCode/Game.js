@@ -61,10 +61,15 @@ var boardSlots = Create2DArray(boardWidth);
 clearBoard();
 var pieceSlotType = BoardSlot.Block7;
 var pieceSlot = new Point(0,0);
+var pieceBlocks = [4]
+pieceBlocks[0] = new Point(1,0);
+pieceBlocks[1] = new Point(1,1);
+pieceBlocks[2] = new Point(1,2);
+pieceBlocks[3] = new Point(1,3);
 
 //scoring
 var score = 0;
-var linesCleared = 0;
+var totalLinesCleared = 0;
 var level = 1;
 var scoredTetrisLast = false;
 
@@ -160,12 +165,21 @@ function processInput(time)
 			currentGameInput.RightPressed = true;
 		else if(keysPressed[index]==27)//Esc
 			currentGameInput.PausePressed = true;
+		else if(keysPressed[index]==77)//M key
+			currentGameInput.SoundKeyPressed = true;
+		else if(keysPressed[index]==90)//Z key
+			currentGameInput.RotLeftPressed = true;
+		else if(keysPressed[index]==88)//X key
+			currentGameInput.RotRightPressed = true;
 	}
 	
 	if(currentGameInput.DownPressed)   gameInput.DownUnHandled = true;
 	if(currentGameInput.LeftPressed && !gameInput.LeftPressed)   gameInput.LeftUnHandled = true;
 	if(currentGameInput.RightPressed && !gameInput.RightPressed) gameInput.RightUnHandled = true;
 	if(currentGameInput.PausePressed && !gameInput.PausePressed) gameInput.PauseUnHandled = true;
+	if(currentGameInput.SoundKeyPressed && !gameInput.SoundKeyPressed) soundEnabled = !soundEnabled;
+	if(currentGameInput.RotLeftPressed && !gameInput.RotLeftPressed) gameInput.RotLeftUnHandled = true;
+	if(currentGameInput.RotRightPressed && !gameInput.RotRightPressed) gameInput.RotRightUnHandled = true;
 	
 	if(gameInput.PauseUnHandled)
 	{
@@ -190,6 +204,8 @@ function gameStart()
 	clearBoard();
 	resetScore();
 	gameState = GameState.Playing;
+	
+	spawnNewPiece();
 }
 
 function gameStop()
@@ -273,26 +289,65 @@ function getRandomBlockPiece()
 
 function movePiece(dX,dY)
 {
-	var newX = pieceSlot.X+dX;
-	var newY = pieceSlot.Y+dY;
-	
-	var valid = (newX>=0 && newX<boardWidth && newY>=0 && newY<boardHeight);
-	
-	if(valid)
+	var valid = true;
+	for(var i=0; i<4; i++)
 	{
-		valid = boardSlots[newX][newY]==BoardSlot.Empty;
+		var slot = new Point(pieceSlot.X+pieceBlocks[i].X+dX,pieceSlot.Y+pieceBlocks[i].Y+dY);
+		
+		valid = valid && (slot.X>=0 && slot.X<boardWidth && slot.Y>=0 && slot.Y<boardHeight);
+		valid = valid && boardSlots[slot.X][slot.Y]==BoardSlot.Empty;
 	}
 	if(valid)
 	{
-		pieceSlot.X = newX;
-		pieceSlot.Y = newY;
+		pieceSlot.X = pieceSlot.X+dX;
+		pieceSlot.Y = pieceSlot.Y+dY;
 	}
 	return valid;
 }
 
+function rotatePiece(clockwise)
+{
+	var rotateArea = 3;
+	if(pieceSlotType==7)
+	{
+		//square
+		return
+	}
+	else if(pieceSlotType==1)
+	{
+		//line rotate around 4
+		rotateArea = 4;
+	}
+	
+	for(var i=0; i<4; i++)
+	{
+		if(clockwise)
+		{
+			var x = 2-pieceBlocks[i].Y;
+			var y = pieceBlocks[i].X;
+		}
+		else
+		{
+			var x = pieceBlocks[i].Y;
+			var y = 2-pieceBlocks[i].X;
+		}
+		
+		pieceBlocks[i].X = x;
+		pieceBlocks[i].Y = y;
+	}
+	if(!movePiece(0,0))
+	{
+		rotatePiece(!clockwise);
+	}
+}
+
 function snapPiece()
 {
-	boardSlots[pieceSlot.X][pieceSlot.Y] = pieceSlotType;
+	for(var i=0; i<4; i++)
+	{
+		var slot = new Point(pieceSlot.X+pieceBlocks[i].X,pieceSlot.Y+pieceBlocks[i].Y);
+		boardSlots[slot.X][slot.Y] = pieceSlotType;
+	}
 	scorePiecePlacement();
 	var linesCleared = checkAndClearLines();
 	if(soundEnabled)
@@ -324,6 +379,8 @@ function checkAndClearLines()
 	}
 	if(linesCleared>0)
 		scoreLinesClear(linesCleared);
+	totalLinesCleared+=linesCleared;
+	level = Math.floor(totalLinesCleared/10)+1;
 	return linesCleared;
 }
 
@@ -349,7 +406,7 @@ function resetScore()
 {
 	score = 0;
 	level = 1;
-	linesCleared = 0;
+	totalLinesCleared = 0;
 	scoredTetrisLast = false;
 }
 
@@ -372,6 +429,57 @@ function spawnNewPiece()
 {
 	pieceSlot = new Point(4,0);
 	pieceSlotType = getRandomBlockPiece();
+	if(pieceSlotType==1)
+	{//line
+		pieceBlocks[0] = new Point(1,0);
+		pieceBlocks[1] = new Point(1,1);
+		pieceBlocks[2] = new Point(1,2);
+		pieceBlocks[3] = new Point(1,3);
+	}
+	if(pieceSlotType==2)
+	{//T
+		pieceBlocks[0] = new Point(1,0);
+		pieceBlocks[1] = new Point(1,1);
+		pieceBlocks[2] = new Point(1,2);
+		pieceBlocks[3] = new Point(2,1);
+	}
+	if(pieceSlotType==3)
+	{//L
+		pieceBlocks[0] = new Point(1,0);
+		pieceBlocks[1] = new Point(1,1);
+		pieceBlocks[2] = new Point(1,2);
+		pieceBlocks[3] = new Point(0,0);
+	}
+	if(pieceSlotType==4)
+	{//backwards L
+		pieceBlocks[0] = new Point(1,0);
+		pieceBlocks[1] = new Point(1,1);
+		pieceBlocks[2] = new Point(1,2);
+		pieceBlocks[3] = new Point(2,0);
+	}
+	if(pieceSlotType==5)
+	{//Z
+		pieceBlocks[0] = new Point(0,0);
+		pieceBlocks[1] = new Point(1,0);
+		pieceBlocks[2] = new Point(1,1);
+		pieceBlocks[3] = new Point(2,1);
+	}
+	if(pieceSlotType==6)
+	{//backwards Z
+		pieceBlocks[0] = new Point(0,1);
+		pieceBlocks[1] = new Point(1,1);
+		pieceBlocks[2] = new Point(1,0);
+		pieceBlocks[3] = new Point(2,0);
+	}
+	if(pieceSlotType==7)
+	{//square
+		pieceBlocks[0] = new Point(0,0);
+		pieceBlocks[1] = new Point(0,1);
+		pieceBlocks[2] = new Point(1,0);
+		pieceBlocks[3] = new Point(1,1);
+	}
+	
+	
 	return true;
 }
 
@@ -399,6 +507,10 @@ function update(time)
 					movePiece(-1,0);
 				if(gameInput.RightUnHandled)
 					movePiece(1,0);
+				if(gameInput.RotRightUnHandled)
+					rotatePiece(false);
+				if(gameInput.RotLeftUnHandled)
+					rotatePiece(true);
 				
 				gameInput.handledInput();
 			}
@@ -432,7 +544,8 @@ function drawFPS(context)
 	context.fillText("Keys:"+keysPressed,           xPos,yPos+ySeperation*2);
 	context.fillText("Input:"+gameInput,           xPos,yPos+ySeperation*3);
 	context.fillText("paused:"+gamePaused,           xPos,yPos+ySeperation*4);
-	context.fillText("Score:"+score,           xPos,yPos+ySeperation*5);
+	context.fillText("Level:"+level,           xPos,yPos+ySeperation*5);
+	context.fillText("Score:"+score,           xPos,yPos+ySeperation*6);
 }
 
 function draw(time)
@@ -470,8 +583,25 @@ function draw(time)
 	}
 	
 	//active piece
-	var piecePos = getSlotPos(pieceSlot.X,pieceSlot.Y);
-	context.drawImage(getBlockImage(pieceSlotType), piecePos.X,piecePos.Y);
+	for(var i=0; i<4; i++)
+	{
+		var piecePos = getSlotPos(pieceSlot.X+pieceBlocks[i].X,pieceSlot.Y+pieceBlocks[i].Y);
+		context.drawImage(getBlockImage(pieceSlotType), piecePos.X,piecePos.Y);
+	}
+	
+	if(gamePaused)
+	{
+		var size = 72;
+		var loc = new Point(boardPos.X,boardPos.Y+boardHeight*blockSize/2+size/2)
+		context.font=size+"px verdana";
+		context.shadowColor="black";
+		context.shadowBlur=7;
+		context.lineWidth=5;
+		context.strokeText("Paused",loc.X,loc.Y);
+		context.shadowBlur=0;
+		context.fillStyle="white";
+		context.fillText("Paused",loc.X,loc.Y);
+	}
 }
 
 function getBlockImage(slot)
