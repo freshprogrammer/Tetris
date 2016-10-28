@@ -45,11 +45,13 @@ GameInput.prototype.clearKeys=function()
 	this.LeftPressed = false;
 	this.RightPressed = false;
 	this.PausePressed = false;
+	this.SoundKeyPressed = false;
 	
 	this.DownUnHandled = false;
 	this.LeftUnHandled = false;
 	this.RightUnHandled = false;
 	this.PauseUnHandled = false;
+	this.SoundKeyUnHandled = false;
 };
 GameInput.prototype.handledInput=function()
 {
@@ -57,6 +59,7 @@ GameInput.prototype.handledInput=function()
 	this.LeftUnHandled = false;
 	this.RightUnHandled = false;
 	this.PauseUnHandled = false;
+	this.SoundKeyUnHandled = false;
 };
 GameInput.prototype.updatePressed=function(otherInput)
 {
@@ -64,6 +67,7 @@ GameInput.prototype.updatePressed=function(otherInput)
 	this.LeftPressed = otherInput.LeftPressed;
 	this.RightPressed = otherInput.RightPressed;
 	this.PausePressed = otherInput.PausePressed;
+	this.SoundKeyPressed = otherInput.SoundKeyPressed;
 };
 GameInput.prototype.toString=function()
 {
@@ -72,6 +76,7 @@ GameInput.prototype.toString=function()
 	if(this.LeftPressed) result+="Left,";
 	if(this.RightPressed)result+="Right,";
 	if(this.PausePressed)result+="Pause,";
+	if(this.SoundKeyPressed)result+="Sound,";
 	
 	return result;
 };

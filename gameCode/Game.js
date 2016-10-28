@@ -160,12 +160,15 @@ function processInput(time)
 			currentGameInput.RightPressed = true;
 		else if(keysPressed[index]==27)//Esc
 			currentGameInput.PausePressed = true;
+		else if(keysPressed[index]==77)//M key
+			currentGameInput.SoundKeyPressed = true;
 	}
 	
 	if(currentGameInput.DownPressed)   gameInput.DownUnHandled = true;
 	if(currentGameInput.LeftPressed && !gameInput.LeftPressed)   gameInput.LeftUnHandled = true;
 	if(currentGameInput.RightPressed && !gameInput.RightPressed) gameInput.RightUnHandled = true;
 	if(currentGameInput.PausePressed && !gameInput.PausePressed) gameInput.PauseUnHandled = true;
+	if(currentGameInput.SoundKeyPressed && !gameInput.SoundKeyPressed) soundEnabled = !soundEnabled;
 	
 	if(gameInput.PauseUnHandled)
 	{
