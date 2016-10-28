@@ -1,3 +1,9 @@
+GameState = {
+    Menu : 1,
+    Playing : 2,
+    Animating : 3
+}
+
 //scene and graphics 
 var canvasID = "myCanvas";
 var canvas;
@@ -29,12 +35,20 @@ var demoRight = true;
 //tetris game timing
 var minPieceDropTime = 50;
 var maxPieceDropTime = 1000;
-var pieceDropTime = maxPieceDropTime;
+var pieceDropTime = minPieceDropTime;
 var timeSinceLastStep = 0;
-var inputMoveTime = 250;
+var inputMoveTime = minPieceDropTime;
 var timeSinceLastInput = 0;
+var gameState = GameState.Menu;
+var gamePaused = false;
 
 //game variables
+var blockSize = 26;
+var boardWidth = 10;
+var boardHeight = 20;
+var boardPos = new Point(200,100);
+var mousePos = new Point(0,0);
+var pieceSlot = new Point(0,0);
 
 function gameBootstrap()
 {	
@@ -110,18 +124,25 @@ function processInput(time)
 	{   
 		if(keysPressed[index]==40)//down
 			currentGameInput.DownPressed = true;
-		else if(keysPressed[index]==39)//right
-			currentGameInput.RightPressed = true;
 		else if(keysPressed[index]==37)//left
 			currentGameInput.LeftPressed = true;
+		else if(keysPressed[index]==39)//right
+			currentGameInput.RightPressed = true;
 		else if(keysPressed[index]==27)//Esc
 			currentGameInput.PausePressed = true;
 	}
 	
-	newDownPressed = (currentGameInput.DownPressed && !gameInput.DownPressed);
-	newRightPressed = (currentGameInput.RightPressed && !gameInput.RightPressed);
-	newLeftPressed = (currentGameInput.LeftPressed && !gameInput.LeftPressed);
-	newPausePressed = (currentGameInput.PausePressed && !gameInput.PausePressed);
+	if(currentGameInput.DownPressed && !gameInput.DownPressed)   gameInput.DownUnHandled = true;
+	if(currentGameInput.LeftPressed && !gameInput.LeftPressed)   gameInput.LeftUnHandled = true;
+	if(currentGameInput.RightPressed && !gameInput.RightPressed) gameInput.RightUnHandled = true;
+	if(currentGameInput.PausePressed && !gameInput.PausePressed) gameInput.PauseUnHandled = true;
+	
+	if(gameInput.PauseUnHandled)
+	{
+		gamePaused = !gamePaused;
+		gameInput.PauseUnHandled = false;
+	}
+	gameInput.updatePressed(currentGameInput);
 }
 
 function gameStart()
@@ -132,10 +153,10 @@ function gameStart()
 	//game objects
 	
 	//start clock
-	gameInput.clearKeys();
 	lastTickTime = window.performance.now();
 	tick();
 	rootTimerObject = setInterval(function(){tick();}, tickDelay);
+	gameState = GameState.Playing;
 }
 
 function gameStop()
@@ -201,33 +222,60 @@ function tick()
 	lastTickTime = window.performance.now();
 }
 
-var blockSize = 26;
-var boardWidth = 10;
-var boardHeight = 20;
-var boardPos = new Point(200,100);
-var mousePos = new Point(0,0);
-var pieceSlot = new Point(0,0);
+function movePiece(dX,dY)
+{
+	var newX = pieceSlot.X-dX;
+	var newY = pieceSlot.Y-dY;
+	
+	if(newX>=0 && newX<boardWidth)
+		pieceSlot.X = newX;
+	if(newY>=0 && newY<boardHeight)
+		pieceSlot.Y = newY;
+}
 
 function update(time)
 {
 	processInput(time);
 	
-	//update game
-	timeSinceLastStep+=time;
-	if(timeSinceLastStep>=pieceDropTime)
+	if(!gamePaused)
 	{
-		timeSinceLastStep = 0;
-		if(pieceSlot.Y<boardHeight-1)
+		if(gameState==GameState.Playing)
 		{
-			pieceSlot.Y +=1;
-		}
-		else
-		{
-			//snap to slot
-			if(soundEnabled)
-				playBeepData();
-			pieceSlot.X++;
-			pieceSlot.Y=0;
+			//update game
+			//step input
+			timeSinceLastInput+=time;
+			if(timeSinceLastInput>=inputMoveTime)
+			{
+				timeSinceLastInput = 0;
+				//handle pressed keys
+				if(gameInput.DownUnHandled)
+					movePiece(0,-1);
+				if(gameInput.LeftUnHandled)
+					movePiece(1,0);
+				if(gameInput.RightUnHandled)
+					movePiece(-1,0);
+				
+				gameInput.handledInput();
+			}
+			
+			//step Piece
+			timeSinceLastStep+=time;
+			if(timeSinceLastStep>=pieceDropTime)
+			{
+				timeSinceLastStep = 0;
+				if(pieceSlot.Y<boardHeight-1)
+				{
+					movePiece(0,-1);
+				}
+				else
+				{
+					//snap to slot
+					if(soundEnabled)
+						playBeepData();
+					pieceSlot.X++;
+					pieceSlot.Y=0;
+				}
+			}
 		}
 	}
 }
@@ -247,6 +295,7 @@ function drawFPS(context)
 
 	context.fillText("Keys:"+keysPressed,           xPos,yPos+ySeperation*2);
 	context.fillText("Input:"+gameInput,           xPos,yPos+ySeperation*3);
+	context.fillText("paused:"+gamePaused,           xPos,yPos+ySeperation*4);
 }
 
 function draw(time)
@@ -255,7 +304,16 @@ function draw(time)
 	
 	context.clearRect (0,0,gameWidth,gameHeight);
 
-	renderDemo(context);
+	
+	// Create gradient
+	var grd = context.createLinearGradient(5+gameWidth/2,0,5+150/2,5);
+	grd.addColorStop(0,"cyan");
+	grd.addColorStop(1,"red");
+
+	// Fill with gradient
+	context.fillStyle = grd;
+	context.fillRect(0,0,gameWidth,gameHeight);
+	//renderDemo(context);
 	drawFPS(context);
 	
 	//render game
