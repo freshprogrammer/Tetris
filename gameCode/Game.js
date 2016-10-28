@@ -1,3 +1,4 @@
+//scene and graphics 
 var canvasID = "myCanvas";
 var canvas;
 var rootTimerObject;
@@ -7,23 +8,28 @@ var lastTickTime = 0;
 var gameWidth;
 var gameHeight;
 
+//fps tracking
 var fpsInterval = 1000;
 var framesThisInterval = 0;
 var lastIntervalFPS = -1;
 var lastIntervalEndTime = 0;
 
+//input
 var keysPressed = [];
 var oneTimeKeys = [48];
 var oneTimeKeysActive = [];
 var gameInput = new GameInput();
 
-var player;
-var level;
-var collisionSystemRendered = true;
-var collisionSystem;
-
+//demo vairables
 var demoX = 1;
 var demoRight = true;
+
+//tetris game timing
+var minPieceDropTime = 50;
+var maxPieceDropTime = 500;
+var pieceDropTime = maxPieceDropTime;
+
+//game variables
 
 function gameBootstrap()
 {	
@@ -44,8 +50,8 @@ function gameBootstrap()
 
 function loadAssets()
 {
-	Player.image = new Image();
-	Player.image.src = 'assets/pics/player/001_attackNN_01.png';
+	//Player.image = new Image();
+	//Player.image.src = 'assets/pics/player/001_attackNN_01.png';
 }
 
 function mouseMove(event)
@@ -119,16 +125,10 @@ function gameStart()
 {
 	//setup game for first run
 	//systems
-	collisionSystem = new CollisionSystem();
-	
-	level = new Level();
-	level.create();
 	
 	//game objects
-	player = new Player();
-	player.X = 100;
-	player.Y = 100;
 	
+	//start clock
 	lastTickTime = window.performance.now();
 	tick();
 	rootTimerObject = setInterval(function(){tick();}, tickDelay);
@@ -169,11 +169,11 @@ function renderDemo(context)
 
 	// Fill with gradient
 	context.fillStyle = grd;
-	//ctx.fillRect(0,0,gameWidth,gameHeight);
+	context.fillRect(0,0,gameWidth,gameHeight);
 	
 	context.font = '40pt Calibri';
 	context.fillStyle = 'black';
-	context.fillText("Gradient X:"+demoX,10,90);
+	context.fillText("Gradient X:"+demoX,demoX,90);
 }
 
 function tick()
@@ -193,7 +193,6 @@ function tick()
 	
 	update(timeDif);
 	draw(timeDif);
-	collisionSystem.clearFrame();
 	
 	lastTickTime = window.performance.now();
 }
@@ -202,10 +201,7 @@ function update(time)
 {
 	processInput(time);
 	
-	player.update(time);
-	level.update(time);
-	
-	collisionSystem.update(time);
+	//update game
 }
 
 function drawFPS(context)
@@ -231,13 +227,9 @@ function draw(time)
 	
 	context.clearRect (0,0,gameWidth,gameHeight);
 
-	//renderDemo(context);
+	renderDemo(context);
 	drawFPS(context);
 	
 	//render game
-	player.draw(context);
-	level.draw(context);
 	
-	if(collisionSystemRendered)
-		collisionSystem.draw(context);
 }
