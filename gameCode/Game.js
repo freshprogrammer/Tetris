@@ -71,6 +71,7 @@ pieceBlocks[3] = new Point(1,3);
 var score = 0;
 var totalLinesCleared = 0;
 var level = 1;
+var tetrises = 0;
 var scoredTetrisLast = false;
 
 function gameBootstrap()
@@ -417,6 +418,7 @@ function resetScore()
 	level = 1;
 	totalLinesCleared = 0;
 	scoredTetrisLast = false;
+	tetrises = 0;
 }
 
 function scorePiecePlacement()
@@ -427,6 +429,7 @@ function scorePiecePlacement()
 function scoreLinesClear(lines)
 {
 	var tetris = (lines==4);
+	if(tetris)tetrises++;
 	if(tetris && scoredTetrisLast)
 		score+=1200;//back to back tetrises
 	else
@@ -548,15 +551,17 @@ function drawFPS(context)
 	context.font = '20pt Calibri';
 	context.fillStyle = 'black';
 
-	//context.fillText("Date:"+d.toUTCString()+" - "+d.getMilliseconds(),xPos,yPos+ySeperation*0);
-	context.fillText("FPS:"+lastIntervalFPS+" - "+framesThisInterval,xPos,yPos+ySeperation*0);
-	context.fillText("Mouse X:"+mousePos.X+" Y:"+mousePos.Y,           xPos,yPos+ySeperation*1);
-
-	context.fillText("Keys:"+keysPressed,           xPos,yPos+ySeperation*2);
-	context.fillText("Input:"+gameInput,           xPos,yPos+ySeperation*3);
-	context.fillText("paused:"+gamePaused,           xPos,yPos+ySeperation*4);
-	context.fillText("Level:"+level,           xPos,yPos+ySeperation*5);
-	context.fillText("Score:"+score,           xPos,yPos+ySeperation*6);
+	var line = 0;
+	
+	//context.fillText("Date:"+d.toUTCString()+" - "+d.getMilliseconds(),xPos,yPos+ySeperation*line++);
+	context.fillText("FPS:"+lastIntervalFPS+" - "+framesThisInterval,xPos,yPos+ySeperation*line++);
+	context.fillText("Mouse X:"+mousePos.X+" Y:"+mousePos.Y,         xPos,yPos+ySeperation*line++);
+	context.fillText("Keys:"+keysPressed,        xPos,yPos+ySeperation*line++);
+	context.fillText("Input:"+gameInput,         xPos,yPos+ySeperation*line++);
+	context.fillText("paused:"+gamePaused,       xPos,yPos+ySeperation*line++);
+	context.fillText("Level:"+level,             xPos,yPos+ySeperation*line++);
+	context.fillText("Score:"+score,             xPos,yPos+ySeperation*line++);
+	context.fillText("Tetris:"+tetrises,         xPos,yPos+ySeperation*line++);
 }
 
 function draw(time)
