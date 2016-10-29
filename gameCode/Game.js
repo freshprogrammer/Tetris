@@ -68,6 +68,14 @@ var boardHeight = 20;
 var boardPos = new Point(200,100);
 var boardSlots = Create2DArray(boardWidth);
 clearBoard();
+
+//piece & nextPiece
+var nextPieceSlotType = BoardSlot.Block7;
+var nextPieceBlocks = [4]
+nextPieceBlocks[0] = new Point(1,0);
+nextPieceBlocks[1] = new Point(1,1);
+nextPieceBlocks[2] = new Point(1,2);
+nextPieceBlocks[3] = new Point(1,3);
 var pieceSlotType = BoardSlot.Block7;
 var pieceSlot = new Point(0,0);
 var pieceBlocks = [4]
@@ -221,6 +229,7 @@ function gameStart()
 	
 	playBackgroundMusic();
 	
+	spawnNewPiece();//double to preload preview piece
 	spawnNewPiece();
 }
 
@@ -296,11 +305,6 @@ function clearBoard()
 			boardSlots[x][y]=BoardSlot.Empty;
 		}
 	}
-}
-
-function getRandomBlockPiece()
-{
-	return Math.floor(Math.random()*7)+1;
 }
 
 function movePiece(dX,dY)
@@ -550,62 +554,76 @@ function scoreLinesClear(lines)
 		pieceDropTime = minPieceDropTime;
 }
 
+function getNextBlockPiece()
+{
+	var newPiece = nextPieceSlotType;
+	nextPieceSlotType = Math.floor(Math.random()*7)+1;
+	nextPieceBlocks = getBlocksForPiece(nextPieceSlotType);
+	return newPiece;
+}
+
 function spawnNewPiece()
 {
+	pieceSlotType = getNextBlockPiece();
 	pieceSlot = new Point(4,0);
-	pieceSlotType = getRandomBlockPiece();
-	if(pieceSlotType==1)
-	{//line
-		pieceBlocks[0] = new Point(1,0);
-		pieceBlocks[1] = new Point(1,1);
-		pieceBlocks[2] = new Point(1,2);
-		pieceBlocks[3] = new Point(1,3);
-	}
-	if(pieceSlotType==2)
-	{//T
-		pieceBlocks[0] = new Point(1,0);
-		pieceBlocks[1] = new Point(1,1);
-		pieceBlocks[2] = new Point(1,2);
-		pieceBlocks[3] = new Point(2,1);
-	}
-	if(pieceSlotType==3)
-	{//L
-		pieceBlocks[0] = new Point(1,0);
-		pieceBlocks[1] = new Point(1,1);
-		pieceBlocks[2] = new Point(1,2);
-		pieceBlocks[3] = new Point(0,0);
-	}
-	if(pieceSlotType==4)
-	{//backwards L
-		pieceBlocks[0] = new Point(1,0);
-		pieceBlocks[1] = new Point(1,1);
-		pieceBlocks[2] = new Point(1,2);
-		pieceBlocks[3] = new Point(2,0);
-	}
-	if(pieceSlotType==5)
-	{//Z
-		pieceBlocks[0] = new Point(0,0);
-		pieceBlocks[1] = new Point(1,0);
-		pieceBlocks[2] = new Point(1,1);
-		pieceBlocks[3] = new Point(2,1);
-	}
-	if(pieceSlotType==6)
-	{//backwards Z
-		pieceBlocks[0] = new Point(0,1);
-		pieceBlocks[1] = new Point(1,1);
-		pieceBlocks[2] = new Point(1,0);
-		pieceBlocks[3] = new Point(2,0);
-	}
-	if(pieceSlotType==7)
-	{//square
-		pieceBlocks[0] = new Point(0,0);
-		pieceBlocks[1] = new Point(0,1);
-		pieceBlocks[2] = new Point(1,0);
-		pieceBlocks[3] = new Point(1,1);
-	}
-	
+	pieceBlocks = getBlocksForPiece(pieceSlotType);
 	
 	return movePiece(0,0);
+}
+
+function getBlocksForPiece(type)
+{
+	var blocks = [4];
+	if(type==1)
+	{//line
+		blocks[0] = new Point(1,0);
+		blocks[1] = new Point(1,1);
+		blocks[2] = new Point(1,2);
+		blocks[3] = new Point(1,3);
+	}
+	else if(type==2)
+	{//T
+		blocks[0] = new Point(1,0);
+		blocks[1] = new Point(1,1);
+		blocks[2] = new Point(1,2);
+		blocks[3] = new Point(2,1);
+	}
+	else if(type==3)
+	{//L
+		blocks[0] = new Point(1,0);
+		blocks[1] = new Point(1,1);
+		blocks[2] = new Point(1,2);
+		blocks[3] = new Point(0,0);
+	}
+	else if(type==4)
+	{//backwards L
+		blocks[0] = new Point(1,0);
+		blocks[1] = new Point(1,1);
+		blocks[2] = new Point(1,2);
+		blocks[3] = new Point(2,0);
+	}
+	else if(type==5)
+	{//Z
+		blocks[0] = new Point(0,0);
+		blocks[1] = new Point(1,0);
+		blocks[2] = new Point(1,1);
+		blocks[3] = new Point(2,1);
+	}
+	else if(type==6)
+	{//backwards Z
+		blocks[0] = new Point(0,1);
+		blocks[1] = new Point(1,1);
+		blocks[2] = new Point(1,0);
+		blocks[3] = new Point(2,0);
+	}
+	else if(type==7)
+	{//square
+		blocks[0] = new Point(0,0);
+		blocks[1] = new Point(0,1);
+		blocks[2] = new Point(1,0);
+		blocks[3] = new Point(1,1);
+	}
+	return blocks;
 }
 
 function update(time)
@@ -719,11 +737,18 @@ function draw(time)
 		}
 	}
 	
+	//next piece
+	for(var i=0; i<4; i++)
+	{
+		var renderPreviewSlot = new Point(11,4);
+		var pos = getSlotPos(renderPreviewSlot.X+nextPieceBlocks[i].X,renderPreviewSlot.Y+nextPieceBlocks[i].Y);
+		context.drawImage(getBlockImage(nextPieceSlotType), pos.X,pos.Y);
+	}
 	//active piece
 	for(var i=0; i<4; i++)
 	{
-		var piecePos = getSlotPos(pieceSlot.X+pieceBlocks[i].X,pieceSlot.Y+pieceBlocks[i].Y);
-		context.drawImage(getBlockImage(pieceSlotType), piecePos.X,piecePos.Y);
+		var pos = getSlotPos(pieceSlot.X+pieceBlocks[i].X,pieceSlot.Y+pieceBlocks[i].Y);
+		context.drawImage(getBlockImage(pieceSlotType), pos.X,pos.Y);
 	}
 	
 	if(gameState==GameState.GameOver)
