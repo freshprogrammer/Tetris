@@ -1,7 +1,8 @@
 GameState = {
     Menu : 'Menu',
     Playing : 'Playing',
-    Animating : 'Animating'
+    Animating : 'Animating',
+	GameOver : 'GameOver'
 }
 BoardSlot = {
 	Empty : 0,
@@ -364,7 +365,12 @@ function snapPiece()
 	var linesCleared = checkAndClearLines();
 	if(soundEnabled)
 		playBeepData();
-	spawnNewPiece()
+	if(!spawnNewPiece())
+	{
+		//game over
+		gamePaused = true;
+		gameState = GameState.GameOver;
+	}
 }
 
 function checkAndClearLines()
@@ -505,7 +511,7 @@ function spawnNewPiece()
 	}
 	
 	
-	return true;
+	return movePiece(0,0);
 }
 
 function update(time)
@@ -575,6 +581,7 @@ function drawFPS(context)
 	context.fillText("Level:"+level,             xPos,yPos+ySeperation*line++);
 	context.fillText("Score:"+score,             xPos,yPos+ySeperation*line++);
 	context.fillText("Tetris:"+tetrises,         xPos,yPos+ySeperation*line++);
+	context.fillText("State:"+gameState,         xPos,yPos+ySeperation*line++);
 }
 
 function draw(time)
@@ -618,7 +625,20 @@ function draw(time)
 		context.drawImage(getBlockImage(pieceSlotType), piecePos.X,piecePos.Y);
 	}
 	
-	if(gamePaused)
+	if(gameState==GameState.GameOver)
+	{
+		var size = 45;
+		var loc = new Point(boardPos.X,boardPos.Y+boardHeight*blockSize/2+size/2)
+		context.font=size+"px verdana";
+		context.shadowColor="black";
+		context.shadowBlur=7;
+		context.lineWidth=5;
+		context.strokeText("Game Over",loc.X,loc.Y);
+		context.shadowBlur=0;
+		context.fillStyle="white";
+		context.fillText("Game Over",loc.X,loc.Y);
+	}
+	else if(gamePaused)
 	{
 		var size = 72;
 		var loc = new Point(boardPos.X,boardPos.Y+boardHeight*blockSize/2+size/2)
