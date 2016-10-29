@@ -14,6 +14,11 @@ BoardSlot = {
 	Block6 : 6,
 	Block7 : 7
 }
+MusicState = {
+	Mute : 'Muted',
+	Sound : 'Effects',
+	Music : 'Music'
+}
 
 //scene and graphics 
 var canvasID = "myCanvas";
@@ -25,7 +30,8 @@ var lastTickTime = 0;
 var gameWidth;
 var gameHeight;
 
-var soundEnabled = true;
+var backgroundMusic;
+var musicState = MusicState.Music;
 
 //fps tracking
 var fpsInterval = 1000;
@@ -183,7 +189,7 @@ function processInput(time)
 	if(currentGameInput.LeftPressed && !gameInput.LeftPressed)   gameInput.LeftUnHandled = true;
 	if(currentGameInput.RightPressed && !gameInput.RightPressed) gameInput.RightUnHandled = true;
 	if(currentGameInput.PausePressed && !gameInput.PausePressed) gameInput.PauseUnHandled = true;
-	if(currentGameInput.SoundKeyPressed && !gameInput.SoundKeyPressed) soundEnabled = !soundEnabled;
+	if(currentGameInput.SoundKeyPressed && !gameInput.SoundKeyPressed) toggleSound();
 	if(currentGameInput.RotLeftPressed && !gameInput.RotLeftPressed) gameInput.RotLeftUnHandled = true;
 	if(currentGameInput.RotRightPressed && !gameInput.RotRightPressed) gameInput.RotRightUnHandled = true;
 	if(currentGameInput.DropPressed && !gameInput.DropPressed) gameInput.DropUnHandled = true;
@@ -191,6 +197,7 @@ function processInput(time)
 	if(gameInput.PauseUnHandled)
 	{
 		gamePaused = !gamePaused;
+		toggleMusicPause();
 		gameInput.PauseUnHandled = false;
 		gameInput.clearKeys();//clear keys pressed while paused
 	}
@@ -211,6 +218,8 @@ function gameStart()
 	clearBoard();
 	resetScore();
 	gameState = GameState.Playing;
+	
+	playBackgroundMusic();
 	
 	spawnNewPiece();
 }
@@ -363,8 +372,7 @@ function snapPiece()
 	}
 	scorePiecePlacement();
 	var linesCleared = checkAndClearLines();
-	if(soundEnabled)
-		playBeepData();
+	playPieceSnapSound();
 	if(!spawnNewPiece())
 	{
 		//game over
@@ -418,6 +426,25 @@ function clearLine(clearY)
 	}
 }
 
+function toggleSound()
+{
+	if(gamePaused)
+		return;
+	
+	if(musicState==MusicState.Mute)musicState = MusicState.Music;
+	else if(musicState==MusicState.Music)musicState = MusicState.Sound;
+	else if(musicState==MusicState.Sound)musicState = MusicState.Mute;
+	
+	if(musicState==MusicState.Music)
+	{
+		playBackgroundMusic();
+	}
+	else
+	{
+		backgroundMusic.pause();
+	}
+}
+
 function resetScore()
 {
 	score = 0;
@@ -432,8 +459,71 @@ function scorePiecePlacement()
 	score+=10;
 }
 
+function playBackgroundMusic()
+{
+	if(musicState==MusicState.Music)
+	{
+		if(backgroundMusic==null)
+		{
+			backgroundMusic = new Audio('assets/audio/tetrisMusic.mp3');
+			backgroundMusic.loop = true;
+			backgroundMusic.volume = 0.1;
+			backgroundMusic.play();
+		}
+		else
+		{
+			backgroundMusic.play();
+		}
+	}
+}
+
+function toggleMusicPause()
+{
+	if(musicState==MusicState.Music)
+	{
+		if(backgroundMusic!=null)
+		{
+			if(backgroundMusic.paused)
+				backgroundMusic.play();
+			else
+				backgroundMusic.pause();
+		}
+	}
+}
+
+function playLineClearSound(lines)
+{
+	if(musicState!=MusicState.Mute)
+	{
+		var audio = new Audio('assets/audio/moneySound.wav');
+		audio.play();
+	}
+}
+
+function playPieceSnapSound()
+{
+	if(musicState!=MusicState.Mute)
+	{
+		var audio = new Audio('assets/audio/drop.wav');
+		audio.volume = 0.1;
+		audio.play();
+	}
+}
+
+function playLevelUpSound()
+{
+	if(musicState!=MusicState.Mute)
+	{
+		//var audio = new Audio('assets/audio/drop.wav');
+		//audio.play();
+	}
+}
+
 function scoreLinesClear(lines)
 {
+	if(lines>0)
+		playLineClearSound(lines)
+	
 	var tetris = (lines==4);
 	if(tetris)tetrises++;
 	if(tetris && scoredTetrisLast)
@@ -448,9 +538,7 @@ function scoreLinesClear(lines)
 	var oldLevel = level;
 	level = Math.floor(totalLinesCleared/linesPerLevel)+1;
 	if(level>oldLevel)
-	{
-		//play level up music or something...
-	}
+		playLevelUpSound();
 	pieceDropTime = maxPieceDropTime - ((maxPieceDropTime - minPieceDropTime)/(highestDificultyLevel-1)) * (level-1);
 	if(pieceDropTime<minPieceDropTime)
 		pieceDropTime = minPieceDropTime;
@@ -566,13 +654,10 @@ function drawFPS(context)
 	var xPos = 5;
 	var yPos = 25;
 	var ySeperation = 25;
-	var d = new Date();
 	context.font = '20pt Calibri';
 	context.fillStyle = 'black';
 
 	var line = 0;
-	
-	//context.fillText("Date:"+d.toUTCString()+" - "+d.getMilliseconds(),xPos,yPos+ySeperation*line++);
 	context.fillText("FPS:"+lastIntervalFPS+" - "+framesThisInterval,xPos,yPos+ySeperation*line++);
 	context.fillText("Mouse X:"+mousePos.X+" Y:"+mousePos.Y,         xPos,yPos+ySeperation*line++);
 	context.fillText("Keys:"+keysPressed,        xPos,yPos+ySeperation*line++);
@@ -582,6 +667,7 @@ function drawFPS(context)
 	context.fillText("Score:"+score,             xPos,yPos+ySeperation*line++);
 	context.fillText("Tetris:"+tetrises,         xPos,yPos+ySeperation*line++);
 	context.fillText("State:"+gameState,         xPos,yPos+ySeperation*line++);
+	context.fillText("Music:"+musicState,         xPos,yPos+ySeperation*line++);
 	
 	
 	line = 0;
