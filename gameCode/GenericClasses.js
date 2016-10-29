@@ -48,6 +48,7 @@ GameInput.prototype.clearKeys=function()
 	this.SoundKeyPressed = false;
 	this.RotLeftPressed = false;
 	this.RotRightPressed = false;
+	this.DropPressed = false;
 	
 	this.DownUnHandled = false;
 	this.LeftUnHandled = false;
@@ -56,6 +57,7 @@ GameInput.prototype.clearKeys=function()
 	this.SoundKeyUnHandled = false;
 	this.RotLeftUnHandled = false;
 	this.RotRightUnHandled = false;
+	this.DropUnHandled = false;
 };
 GameInput.prototype.handledInput=function()
 {
@@ -66,6 +68,7 @@ GameInput.prototype.handledInput=function()
 	this.SoundKeyUnHandled = false;
 	this.RotLeftUnHandled = false;
 	this.RotRightUnHandled = false;
+	this.DropUnHandled = false;
 };
 GameInput.prototype.updatePressed=function(otherInput)
 {
@@ -74,8 +77,9 @@ GameInput.prototype.updatePressed=function(otherInput)
 	this.RightPressed = otherInput.RightPressed;
 	this.PausePressed = otherInput.PausePressed;
 	this.SoundKeyPressed = otherInput.SoundKeyPressed;
-	this.RotLeftPressed = otherInput.RotLeftPressed;;
-	this.RotRightPressed = otherInput.RotRightPressed;;
+	this.RotLeftPressed = otherInput.RotLeftPressed;
+	this.RotRightPressed = otherInput.RotRightPressed;
+	this.DropPressed = otherInput.DropPressed;
 };
 GameInput.prototype.toString=function()
 {
@@ -87,6 +91,7 @@ GameInput.prototype.toString=function()
 	if(this.SoundKeyPressed)result+="Sound,";
 	if(this.RotLeftPressed)result+="RotL,";
 	if(this.RotRightPressed)result+="RotR,";
+	if(this.DropPressed)result+="Drop,";
 	
 	return result;
 };

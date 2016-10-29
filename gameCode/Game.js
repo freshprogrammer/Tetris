@@ -1,7 +1,8 @@
 GameState = {
     Menu : 'Menu',
     Playing : 'Playing',
-    Animating : 'Animating'
+    Animating : 'Animating',
+	GameOver : 'GameOver'
 }
 BoardSlot = {
 	Empty : 0,
@@ -42,15 +43,17 @@ var gameInput = new GameInput();
 var demoX = 1;
 var demoRight = true;
 
-//tetris game timing
+//tetris game system and timing
+var gameState = GameState.Menu;
+var gamePaused = false;
 var minPieceDropTime = 50;
 var maxPieceDropTime = 1000;
 var pieceDropTime = maxPieceDropTime;
 var timeSinceLastStep = 0;
 var inputMoveTime = minPieceDropTime;
 var timeSinceLastInput = 0;
-var gameState = GameState.Menu;
-var gamePaused = false;
+var highestDificultyLevel = 10;
+var linesPerLevel = 10;
 
 //game variables
 var blockSize = 26;
@@ -71,6 +74,7 @@ pieceBlocks[3] = new Point(1,3);
 var score = 0;
 var totalLinesCleared = 0;
 var level = 1;
+var tetrises = 0;
 var scoredTetrisLast = false;
 
 function gameBootstrap()
@@ -168,9 +172,11 @@ function processInput(time)
 		else if(keysPressed[index]==77)//M key
 			currentGameInput.SoundKeyPressed = true;
 		else if(keysPressed[index]==90)//Z key
-			currentGameInput.RotLeftPressed = true;
-		else if(keysPressed[index]==88)//X key
 			currentGameInput.RotRightPressed = true;
+		else if(keysPressed[index]==88)//X key
+			currentGameInput.RotLeftPressed = true;
+		else if(keysPressed[index]==32)//space
+			currentGameInput.DropPressed = true;
 	}
 	
 	if(currentGameInput.DownPressed)   gameInput.DownUnHandled = true;
@@ -180,6 +186,7 @@ function processInput(time)
 	if(currentGameInput.SoundKeyPressed && !gameInput.SoundKeyPressed) soundEnabled = !soundEnabled;
 	if(currentGameInput.RotLeftPressed && !gameInput.RotLeftPressed) gameInput.RotLeftUnHandled = true;
 	if(currentGameInput.RotRightPressed && !gameInput.RotRightPressed) gameInput.RotRightUnHandled = true;
+	if(currentGameInput.DropPressed && !gameInput.DropPressed) gameInput.DropUnHandled = true;
 	
 	if(gameInput.PauseUnHandled)
 	{
@@ -341,6 +348,12 @@ function rotatePiece(clockwise)
 	}
 }
 
+function dropPiece()
+{
+	while(movePiece(0,1));
+	snapPiece();
+}
+
 function snapPiece()
 {
 	for(var i=0; i<4; i++)
@@ -352,7 +365,12 @@ function snapPiece()
 	var linesCleared = checkAndClearLines();
 	if(soundEnabled)
 		playBeepData();
-	spawnNewPiece()
+	if(!spawnNewPiece())
+	{
+		//game over
+		gamePaused = true;
+		gameState = GameState.GameOver;
+	}
 }
 
 function checkAndClearLines()
@@ -379,8 +397,6 @@ function checkAndClearLines()
 	}
 	if(linesCleared>0)
 		scoreLinesClear(linesCleared);
-	totalLinesCleared+=linesCleared;
-	level = Math.floor(totalLinesCleared/10)+1;
 	return linesCleared;
 }
 
@@ -408,6 +424,7 @@ function resetScore()
 	level = 1;
 	totalLinesCleared = 0;
 	scoredTetrisLast = false;
+	tetrises = 0;
 }
 
 function scorePiecePlacement()
@@ -418,11 +435,25 @@ function scorePiecePlacement()
 function scoreLinesClear(lines)
 {
 	var tetris = (lines==4);
+	if(tetris)tetrises++;
 	if(tetris && scoredTetrisLast)
 		score+=1200;//back to back tetrises
 	else
 		score+=Math.pow(2,lines-1)*100;
 	scoredTetrisLast = tetris;
+	
+	totalLinesCleared+=lines;
+	
+	//level up
+	var oldLevel = level;
+	level = Math.floor(totalLinesCleared/linesPerLevel)+1;
+	if(level>oldLevel)
+	{
+		//play level up music or something...
+	}
+	pieceDropTime = maxPieceDropTime - ((maxPieceDropTime - minPieceDropTime)/(highestDificultyLevel-1)) * (level-1);
+	if(pieceDropTime<minPieceDropTime)
+		pieceDropTime = minPieceDropTime;
 }
 
 function spawnNewPiece()
@@ -480,7 +511,7 @@ function spawnNewPiece()
 	}
 	
 	
-	return true;
+	return movePiece(0,0);
 }
 
 function update(time)
@@ -511,6 +542,8 @@ function update(time)
 					rotatePiece(false);
 				if(gameInput.RotLeftUnHandled)
 					rotatePiece(true);
+				if(gameInput.DropUnHandled)
+					dropPiece();
 				
 				gameInput.handledInput();
 			}
@@ -537,15 +570,18 @@ function drawFPS(context)
 	context.font = '20pt Calibri';
 	context.fillStyle = 'black';
 
-	//context.fillText("Date:"+d.toUTCString()+" - "+d.getMilliseconds(),xPos,yPos+ySeperation*0);
-	context.fillText("FPS:"+lastIntervalFPS+" - "+framesThisInterval,xPos,yPos+ySeperation*0);
-	context.fillText("Mouse X:"+mousePos.X+" Y:"+mousePos.Y,           xPos,yPos+ySeperation*1);
-
-	context.fillText("Keys:"+keysPressed,           xPos,yPos+ySeperation*2);
-	context.fillText("Input:"+gameInput,           xPos,yPos+ySeperation*3);
-	context.fillText("paused:"+gamePaused,           xPos,yPos+ySeperation*4);
-	context.fillText("Level:"+level,           xPos,yPos+ySeperation*5);
-	context.fillText("Score:"+score,           xPos,yPos+ySeperation*6);
+	var line = 0;
+	
+	//context.fillText("Date:"+d.toUTCString()+" - "+d.getMilliseconds(),xPos,yPos+ySeperation*line++);
+	context.fillText("FPS:"+lastIntervalFPS+" - "+framesThisInterval,xPos,yPos+ySeperation*line++);
+	context.fillText("Mouse X:"+mousePos.X+" Y:"+mousePos.Y,         xPos,yPos+ySeperation*line++);
+	context.fillText("Keys:"+keysPressed,        xPos,yPos+ySeperation*line++);
+	context.fillText("Input:"+gameInput,         xPos,yPos+ySeperation*line++);
+	context.fillText("paused:"+gamePaused,       xPos,yPos+ySeperation*line++);
+	context.fillText("Level:"+level,             xPos,yPos+ySeperation*line++);
+	context.fillText("Score:"+score,             xPos,yPos+ySeperation*line++);
+	context.fillText("Tetris:"+tetrises,         xPos,yPos+ySeperation*line++);
+	context.fillText("State:"+gameState,         xPos,yPos+ySeperation*line++);
 }
 
 function draw(time)
@@ -556,9 +592,9 @@ function draw(time)
 
 	
 	// Create gradient
-	var grd = context.createLinearGradient(5+gameWidth/2,0,5+150/2,5);
-	grd.addColorStop(0,"cyan");
-	grd.addColorStop(1,"red");
+	var grd = context.createLinearGradient(0,0,0,gameHeight);
+	grd.addColorStop(0,"white");
+	grd.addColorStop(1,"black");
 
 	// Fill with gradient
 	context.fillStyle = grd;
@@ -589,7 +625,20 @@ function draw(time)
 		context.drawImage(getBlockImage(pieceSlotType), piecePos.X,piecePos.Y);
 	}
 	
-	if(gamePaused)
+	if(gameState==GameState.GameOver)
+	{
+		var size = 45;
+		var loc = new Point(boardPos.X,boardPos.Y+boardHeight*blockSize/2+size/2)
+		context.font=size+"px verdana";
+		context.shadowColor="black";
+		context.shadowBlur=7;
+		context.lineWidth=5;
+		context.strokeText("Game Over",loc.X,loc.Y);
+		context.shadowBlur=0;
+		context.fillStyle="white";
+		context.fillText("Game Over",loc.X,loc.Y);
+	}
+	else if(gamePaused)
 	{
 		var size = 72;
 		var loc = new Point(boardPos.X,boardPos.Y+boardHeight*blockSize/2+size/2)
