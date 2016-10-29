@@ -42,15 +42,17 @@ var gameInput = new GameInput();
 var demoX = 1;
 var demoRight = true;
 
-//tetris game timing
+//tetris game system and timing
+var gameState = GameState.Menu;
+var gamePaused = false;
 var minPieceDropTime = 50;
 var maxPieceDropTime = 1000;
 var pieceDropTime = maxPieceDropTime;
 var timeSinceLastStep = 0;
 var inputMoveTime = minPieceDropTime;
 var timeSinceLastInput = 0;
-var gameState = GameState.Menu;
-var gamePaused = false;
+var highestDificultyLevel = 10;
+var linesPerLevel = 10;
 
 //game variables
 var blockSize = 26;
@@ -389,8 +391,6 @@ function checkAndClearLines()
 	}
 	if(linesCleared>0)
 		scoreLinesClear(linesCleared);
-	totalLinesCleared+=linesCleared;
-	level = Math.floor(totalLinesCleared/10)+1;
 	return linesCleared;
 }
 
@@ -435,6 +435,19 @@ function scoreLinesClear(lines)
 	else
 		score+=Math.pow(2,lines-1)*100;
 	scoredTetrisLast = tetris;
+	
+	totalLinesCleared+=lines;
+	
+	//level up
+	var oldLevel = level;
+	level = Math.floor(totalLinesCleared/linesPerLevel)+1;
+	if(level>oldLevel)
+	{
+		//play level up music or something...
+	}
+	pieceDropTime = maxPieceDropTime - ((maxPieceDropTime - minPieceDropTime)/(highestDificultyLevel-1)) * (level-1);
+	if(pieceDropTime<minPieceDropTime)
+		pieceDropTime = minPieceDropTime;
 }
 
 function spawnNewPiece()
@@ -572,9 +585,9 @@ function draw(time)
 
 	
 	// Create gradient
-	var grd = context.createLinearGradient(5+gameWidth/2,0,5+150/2,5);
-	grd.addColorStop(0,"cyan");
-	grd.addColorStop(1,"red");
+	var grd = context.createLinearGradient(0,0,0,gameHeight);
+	grd.addColorStop(0,"white");
+	grd.addColorStop(1,"black");
 
 	// Fill with gradient
 	context.fillStyle = grd;
