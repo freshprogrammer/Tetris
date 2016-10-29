@@ -94,6 +94,18 @@ var stopwatch = new Stopwatch();
 
 function gameBootstrap()
 {	
+	//testcode
+	var test = "";
+	var test2 = "";
+	var xhr = new XMLHttpRequest();
+	xhr.open('GET', 'http://freshprogramming.com/miniTools/jsTetris/tetrisScores.php', true);
+	xhr.onreadystatechange = function() {
+	  if (xhr.readyState === 4)  { 
+		console.log(xhr.responseText);
+	  }
+	};
+	xhr.send(null);
+
 	canvas = document.getElementById(canvasID);
 	gameWidth = canvas.width;
 	gameHeight = canvas.height;

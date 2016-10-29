@@ -13,8 +13,7 @@ function Create2DArray(rows)
 function getMousePos(canvas, evt) 
 {
 	var rect = canvas.getBoundingClientRect();
-	return 
-	{
+	return {
 		X: evt.clientX - rect.left,
 		Y: evt.clientY - rect.top
 	};
