@@ -90,6 +90,7 @@ var totalLinesCleared = 0;
 var level = 1;
 var tetrises = 0;
 var scoredTetrisLast = false;
+var stopwatch = new Stopwatch();
 
 function gameBootstrap()
 {	
@@ -196,20 +197,28 @@ function processInput(time)
 	if(currentGameInput.DownPressed)   gameInput.DownUnHandled = true;
 	if(currentGameInput.LeftPressed && !gameInput.LeftPressed)   gameInput.LeftUnHandled = true;
 	if(currentGameInput.RightPressed && !gameInput.RightPressed) gameInput.RightUnHandled = true;
-	if(currentGameInput.PausePressed && !gameInput.PausePressed) gameInput.PauseUnHandled = true;
+	if(currentGameInput.PausePressed && !gameInput.PausePressed) gamePause();
 	if(currentGameInput.SoundKeyPressed && !gameInput.SoundKeyPressed) toggleSound();
 	if(currentGameInput.RotLeftPressed && !gameInput.RotLeftPressed) gameInput.RotLeftUnHandled = true;
 	if(currentGameInput.RotRightPressed && !gameInput.RotRightPressed) gameInput.RotRightUnHandled = true;
 	if(currentGameInput.DropPressed && !gameInput.DropPressed) gameInput.DropUnHandled = true;
 	
-	if(gameInput.PauseUnHandled)
+	gameInput.updatePressed(currentGameInput);
+}
+
+function gamePause()
+{
+	if(gameState==GameState.Playing || gameState==GameState.Animating)
 	{
 		gamePaused = !gamePaused;
+		if(gamePaused)
+			stopwatch.stop();
+		else
+			stopwatch.start();
+		
 		toggleMusicPause();
-		gameInput.PauseUnHandled = false;
 		gameInput.clearKeys();//clear keys pressed while paused
 	}
-	gameInput.updatePressed(currentGameInput);
 }
 
 function gameStart()
@@ -226,6 +235,8 @@ function gameStart()
 	clearBoard();
 	resetScore();
 	gameState = GameState.Playing;
+	stopwatch.reset();
+	stopwatch.start();
 	
 	playBackgroundMusic();
 	
@@ -386,6 +397,7 @@ function snapPiece()
 
 function gameOver()
 {
+	stopwatch.stop();
 	gamePaused = true;
 	gameState = GameState.GameOver;
 	toggleMusicPause();
@@ -682,16 +694,16 @@ function drawFPS(context)
 	context.fillStyle = 'black';
 
 	var line = 0;
-	context.fillText("FPS:"+lastIntervalFPS+" - "+framesThisInterval,xPos,yPos+ySeperation*line++);
-	context.fillText("Mouse X:"+mousePos.X+" Y:"+mousePos.Y,         xPos,yPos+ySeperation*line++);
+	//context.fillText("FPS:"+lastIntervalFPS+" - "+framesThisInterval,xPos,yPos+ySeperation*line++);
+	context.fillText("FPS:"+lastIntervalFPS+" - "+stopwatch.formattedTime(),     xPos,yPos+ySeperation*line++);
 	context.fillText("Keys:"+keysPressed,        xPos,yPos+ySeperation*line++);
 	context.fillText("Input:"+gameInput,         xPos,yPos+ySeperation*line++);
-	context.fillText("paused:"+gamePaused,       xPos,yPos+ySeperation*line++);
+	context.fillText("State:"+gameState,         xPos,yPos+ySeperation*line++);
+	context.fillText("Sound:"+musicState,        xPos,yPos+ySeperation*line++);
+	line++;
 	context.fillText("Level:"+level,             xPos,yPos+ySeperation*line++);
 	context.fillText("Score:"+score,             xPos,yPos+ySeperation*line++);
 	context.fillText("Tetris:"+tetrises,         xPos,yPos+ySeperation*line++);
-	context.fillText("State:"+gameState,         xPos,yPos+ySeperation*line++);
-	context.fillText("Sound:"+musicState,         xPos,yPos+ySeperation*line++);
 	
 	
 	line = 0;
