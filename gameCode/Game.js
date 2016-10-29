@@ -582,6 +582,15 @@ function drawFPS(context)
 	context.fillText("Score:"+score,             xPos,yPos+ySeperation*line++);
 	context.fillText("Tetris:"+tetrises,         xPos,yPos+ySeperation*line++);
 	context.fillText("State:"+gameState,         xPos,yPos+ySeperation*line++);
+	
+	
+	line = 0;
+	var xPos = 500;
+	context.fillText("Controls:",    xPos,yPos+ySeperation*line++);
+	context.fillText("Move:Arrows",  xPos,yPos+ySeperation*line++);
+	context.fillText("Rotate:Z, X",  xPos,yPos+ySeperation*line++);
+	context.fillText("Drop:Space",   xPos,yPos+ySeperation*line++);
+	context.fillText("Mute:M",       xPos,yPos+ySeperation*line++);
 }
 
 function draw(time)
