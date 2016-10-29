@@ -168,9 +168,9 @@ function processInput(time)
 		else if(keysPressed[index]==77)//M key
 			currentGameInput.SoundKeyPressed = true;
 		else if(keysPressed[index]==90)//Z key
-			currentGameInput.RotLeftPressed = true;
-		else if(keysPressed[index]==88)//X key
 			currentGameInput.RotRightPressed = true;
+		else if(keysPressed[index]==88)//X key
+			currentGameInput.RotLeftPressed = true;
 	}
 	
 	if(currentGameInput.DownPressed)   gameInput.DownUnHandled = true;

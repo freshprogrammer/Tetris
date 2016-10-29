@@ -6,7 +6,8 @@
 
 ### Controls
 - arrow keys to move
-- Esc to pause
+- Z & X to rotate
+- Esc to pause 
 - M to mute
 
 
