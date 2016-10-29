@@ -9,6 +9,7 @@
 - Z & X to rotate
 - Esc to pause 
 - M to mute
+- Space to Drop
 
 
 ### Note

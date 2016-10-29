@@ -171,6 +171,8 @@ function processInput(time)
 			currentGameInput.RotRightPressed = true;
 		else if(keysPressed[index]==88)//X key
 			currentGameInput.RotLeftPressed = true;
+		else if(keysPressed[index]==32)//space
+			currentGameInput.DropPressed = true;
 	}
 	
 	if(currentGameInput.DownPressed)   gameInput.DownUnHandled = true;
@@ -180,6 +182,7 @@ function processInput(time)
 	if(currentGameInput.SoundKeyPressed && !gameInput.SoundKeyPressed) soundEnabled = !soundEnabled;
 	if(currentGameInput.RotLeftPressed && !gameInput.RotLeftPressed) gameInput.RotLeftUnHandled = true;
 	if(currentGameInput.RotRightPressed && !gameInput.RotRightPressed) gameInput.RotRightUnHandled = true;
+	if(currentGameInput.DropPressed && !gameInput.DropPressed) gameInput.DropUnHandled = true;
 	
 	if(gameInput.PauseUnHandled)
 	{
@@ -339,6 +342,12 @@ function rotatePiece(clockwise)
 	{
 		rotatePiece(!clockwise);
 	}
+}
+
+function dropPiece()
+{
+	while(movePiece(0,1));
+	snapPiece();
 }
 
 function snapPiece()
@@ -511,6 +520,8 @@ function update(time)
 					rotatePiece(false);
 				if(gameInput.RotLeftUnHandled)
 					rotatePiece(true);
+				if(gameInput.DropUnHandled)
+					dropPiece();
 				
 				gameInput.handledInput();
 			}
