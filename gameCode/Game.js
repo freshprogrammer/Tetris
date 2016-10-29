@@ -376,9 +376,15 @@ function snapPiece()
 	if(!spawnNewPiece())
 	{
 		//game over
-		gamePaused = true;
-		gameState = GameState.GameOver;
+		gameOver();
 	}
+}
+
+function gameOver()
+{
+	gamePaused = true;
+	gameState = GameState.GameOver;
+	toggleMusicPause();
 }
 
 function checkAndClearLines()
@@ -667,7 +673,7 @@ function drawFPS(context)
 	context.fillText("Score:"+score,             xPos,yPos+ySeperation*line++);
 	context.fillText("Tetris:"+tetrises,         xPos,yPos+ySeperation*line++);
 	context.fillText("State:"+gameState,         xPos,yPos+ySeperation*line++);
-	context.fillText("Music:"+musicState,         xPos,yPos+ySeperation*line++);
+	context.fillText("Sound:"+musicState,         xPos,yPos+ySeperation*line++);
 	
 	
 	line = 0;
