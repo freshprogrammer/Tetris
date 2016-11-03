@@ -351,7 +351,7 @@ function movePiece(dX,dY)
 
 function rotatePiece(clockwise)
 {
-	var rotateArea = 3;
+	var rotateArea = 2;
 	if(pieceSlotType==7)
 	{
 		//square
@@ -360,26 +360,47 @@ function rotatePiece(clockwise)
 	else if(pieceSlotType==1)
 	{
 		//line rotate around 4
-		rotateArea = 4;
+		rotateArea = 3;
 	}
 	
 	for(var i=0; i<4; i++)
 	{
 		if(clockwise)
 		{
-			var x = 2-pieceBlocks[i].Y;
+			var x = rotateArea-pieceBlocks[i].Y;
 			var y = pieceBlocks[i].X;
 		}
 		else
 		{
 			var x = pieceBlocks[i].Y;
-			var y = 2-pieceBlocks[i].X;
+			var y = rotateArea-pieceBlocks[i].X;
 		}
 		
 		pieceBlocks[i].X = x;
 		pieceBlocks[i].Y = y;
 	}
-	if(!movePiece(0,0))
+	
+	var minX = 0;
+	var minY = 0;
+	var maxX = boardWidth-1;
+	var maxY = boardHeight-1;
+	for(var i=0; i<4; i++)
+	{
+		var slot = new Point(pieceSlot.X+pieceBlocks[i].X,pieceSlot.Y+pieceBlocks[i].Y);
+		
+		if(slot.X<minX)minX = slot.X;
+		else if(slot.X>maxX)maxX = slot.X;
+		if(slot.Y<minY)minY = slot.Y;
+		else if(slot.Y>maxY)maxY = slot.Y;
+	}
+	var xShift = 0;
+	var yShift = 0;
+	if(minX<0)xShift = -1*minX;
+	else if(maxX>boardWidth-1)xShift = -1*(maxX-(boardWidth-1));
+	if(minY<0)yShift = -1*minY;
+	else if(maxY>boardHeight-1)yShift = -1*(maxY-(boardHeight-1));
+	
+	if(!movePiece(xShift,yShift))
 	{
 		rotatePiece(!clockwise);
 	}
@@ -590,8 +611,15 @@ function getNextBlockPiece()
 function spawnNewPiece()
 {
 	pieceSlotType = getNextBlockPiece();
-	pieceSlot = new Point(4,0);
+	pieceSlot = new Point(3,0);
 	pieceBlocks = getBlocksForPiece(pieceSlotType);
+	
+	//tweak blocks to center and up as necisarry
+	movePiece(0,-1);
+	if(pieceSlotType == BoardSlot.Block7)
+	{//block
+		movePiece(1,0);
+	}
 	
 	return movePiece(0,0);
 }
@@ -599,49 +627,49 @@ function spawnNewPiece()
 function getBlocksForPiece(type)
 {
 	var blocks = [4];
-	if(type==1)
+	if(type==BoardSlot.Block1)
 	{//line
-		blocks[0] = new Point(1,0);
+		blocks[0] = new Point(0,1);
 		blocks[1] = new Point(1,1);
-		blocks[2] = new Point(1,2);
-		blocks[3] = new Point(1,3);
+		blocks[2] = new Point(2,1);
+		blocks[3] = new Point(3,1);
 	}
-	else if(type==2)
+	else if(type==BoardSlot.Block2)
 	{//T
-		blocks[0] = new Point(1,0);
-		blocks[1] = new Point(1,1);
-		blocks[2] = new Point(1,2);
+		blocks[0] = new Point(1,2);
+		blocks[1] = new Point(0,1);
+		blocks[2] = new Point(1,1);
 		blocks[3] = new Point(2,1);
 	}
-	else if(type==3)
+	else if(type==BoardSlot.Block3)
 	{//L
-		blocks[0] = new Point(1,0);
-		blocks[1] = new Point(1,1);
-		blocks[2] = new Point(1,2);
-		blocks[3] = new Point(0,0);
+		blocks[0] = new Point(0,2);
+		blocks[1] = new Point(0,1);
+		blocks[2] = new Point(1,1);
+		blocks[3] = new Point(2,1);
 	}
-	else if(type==4)
+	else if(type==BoardSlot.Block4)
 	{//backwards L
-		blocks[0] = new Point(1,0);
-		blocks[1] = new Point(1,1);
-		blocks[2] = new Point(1,2);
-		blocks[3] = new Point(2,0);
+		blocks[0] = new Point(2,2);
+		blocks[1] = new Point(0,1);
+		blocks[2] = new Point(1,1);
+		blocks[3] = new Point(2,1);
 	}
-	else if(type==5)
+	else if(type==BoardSlot.Block5)
 	{//Z
 		blocks[0] = new Point(0,0);
 		blocks[1] = new Point(1,0);
 		blocks[2] = new Point(1,1);
 		blocks[3] = new Point(2,1);
 	}
-	else if(type==6)
+	else if(type==BoardSlot.Block6)
 	{//backwards Z
 		blocks[0] = new Point(0,1);
 		blocks[1] = new Point(1,1);
 		blocks[2] = new Point(1,0);
 		blocks[3] = new Point(2,0);
 	}
-	else if(type==7)
+	else if(type==BoardSlot.Block7)
 	{//square
 		blocks[0] = new Point(0,0);
 		blocks[1] = new Point(0,1);
