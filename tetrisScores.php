@@ -30,7 +30,7 @@
 			$ip = $_SERVER['REMOTE_ADDR'];
 				
 			$date = new DateTime();
-			$stamp = date( "Y-m-d H:i:s", mktime(0, 0, 0));
+			$stamp = date( "Y-m-d H:i:s");
 			
 			$scoreString = $name.",".$score.",".$lines.",".$tetris.",".$time.",".$ip.",".$stamp;
 			AppendScore($scoreString);

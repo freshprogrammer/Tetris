@@ -95,6 +95,7 @@ var stopwatch = new Stopwatch();
 function gameBootstrap()
 {	
 	//testcode
+	/*
 	var test = "";
 	var test2 = "";
 	var xhr = new XMLHttpRequest();
@@ -104,7 +105,7 @@ function gameBootstrap()
 		console.log(xhr.responseText);
 	  }
 	};
-	xhr.send(null);
+	xhr.send(null);*/
 
 	canvas = document.getElementById(canvasID);
 	gameWidth = canvas.width;
