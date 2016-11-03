@@ -53,7 +53,7 @@ var demoRight = true;
 var gameState = GameState.Menu;
 var gamePaused = false;
 var minPieceDropTime = 75;
-var maxPieceDropTime = 150;//1000;
+var maxPieceDropTime = 1000;
 var pieceDropTime = maxPieceDropTime;
 var timeSinceLastStep = 0;
 var inputMoveTime = minPieceDropTime;
@@ -707,20 +707,22 @@ function drawFPS(context)
 	context.fillStyle = 'black';
 
 	var line = 0;
+	context.fillText("Time:"+stopwatch.formattedTime(), xPos,yPos+ySeperation*line++);
+	context.fillText("Level:"+level,                    xPos,yPos+ySeperation*line++);
+	context.fillText("Score:"+score,                    xPos,yPos+ySeperation*line++);
+	context.fillText("Lines:"+totalLinesCleared,        xPos,yPos+ySeperation*line++);
+	context.fillText("Tetris:"+tetrises,                xPos,yPos+ySeperation*line++);
+	line++;                                             
 	//context.fillText("FPS:"+lastIntervalFPS+" - "+framesThisInterval,xPos,yPos+ySeperation*line++);
-	context.fillText("FPS:"+lastIntervalFPS+" - "+stopwatch.formattedTime(),     xPos,yPos+ySeperation*line++);
-	context.fillText("Keys:"+keysPressed,        xPos,yPos+ySeperation*line++);
-	context.fillText("Input:"+gameInput,         xPos,yPos+ySeperation*line++);
-	context.fillText("State:"+gameState,         xPos,yPos+ySeperation*line++);
-	context.fillText("Sound:"+musicState,        xPos,yPos+ySeperation*line++);
-	line++;
-	context.fillText("Level:"+level,             xPos,yPos+ySeperation*line++);
-	context.fillText("Score:"+score,             xPos,yPos+ySeperation*line++);
-	context.fillText("Tetris:"+tetrises,         xPos,yPos+ySeperation*line++);
+	context.fillText("FPS:"+lastIntervalFPS,            xPos,yPos+ySeperation*line++);
+	context.fillText("State:"+gameState,                xPos,yPos+ySeperation*line++);
+	context.fillText("Sound:"+musicState,               xPos,yPos+ySeperation*line++);
+	context.fillText("Keys:"+keysPressed,               xPos,yPos+ySeperation*line++);
+	context.fillText("Input:"+gameInput,                xPos,yPos+ySeperation*line++);
 	
 	
+	var xPos = 475;
 	line = 0;
-	var xPos = 500;
 	context.fillText("Controls:",    xPos,yPos+ySeperation*line++);
 	context.fillText("Move:Arrows",  xPos,yPos+ySeperation*line++);
 	context.fillText("Rotate:Z, X",  xPos,yPos+ySeperation*line++);
