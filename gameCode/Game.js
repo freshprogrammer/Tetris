@@ -351,7 +351,7 @@ function movePiece(dX,dY)
 
 function rotatePiece(clockwise)
 {
-	var rotateArea = 3;
+	var rotateArea = 2;
 	if(pieceSlotType==7)
 	{
 		//square
@@ -360,26 +360,47 @@ function rotatePiece(clockwise)
 	else if(pieceSlotType==1)
 	{
 		//line rotate around 4
-		rotateArea = 4;
+		rotateArea = 3;
 	}
 	
 	for(var i=0; i<4; i++)
 	{
 		if(clockwise)
 		{
-			var x = 2-pieceBlocks[i].Y;
+			var x = rotateArea-pieceBlocks[i].Y;
 			var y = pieceBlocks[i].X;
 		}
 		else
 		{
 			var x = pieceBlocks[i].Y;
-			var y = 2-pieceBlocks[i].X;
+			var y = rotateArea-pieceBlocks[i].X;
 		}
 		
 		pieceBlocks[i].X = x;
 		pieceBlocks[i].Y = y;
 	}
-	if(!movePiece(0,0))
+	
+	var minX = 0;
+	var minY = 0;
+	var maxX = boardWidth-1;
+	var maxY = boardHeight-1;
+	for(var i=0; i<4; i++)
+	{
+		var slot = new Point(pieceSlot.X+pieceBlocks[i].X,pieceSlot.Y+pieceBlocks[i].Y);
+		
+		if(slot.X<minX)minX = slot.X;
+		else if(slot.X>maxX)maxX = slot.X;
+		if(slot.Y<minY)minY = slot.Y;
+		else if(slot.Y>maxY)maxY = slot.Y;
+	}
+	var xShift = 0;
+	var yShift = 0;
+	if(minX<0)xShift = -1*minX;
+	else if(maxX>boardWidth-1)xShift = -1*(maxX-(boardWidth-1));
+	if(minY<0)yShift = -1*minY;
+	else if(maxY>boardHeight-1)yShift = -1*(maxY-(boardHeight-1));
+	
+	if(!movePiece(xShift,yShift))
 	{
 		rotatePiece(!clockwise);
 	}
