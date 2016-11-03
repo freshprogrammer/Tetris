@@ -52,8 +52,8 @@ var demoRight = true;
 //tetris game system and timing
 var gameState = GameState.Menu;
 var gamePaused = false;
-var minPieceDropTime = 50;
-var maxPieceDropTime = 1000;
+var minPieceDropTime = 75;
+var maxPieceDropTime = 150;//1000;
 var pieceDropTime = maxPieceDropTime;
 var timeSinceLastStep = 0;
 var inputMoveTime = minPieceDropTime;
@@ -726,6 +726,7 @@ function drawFPS(context)
 	context.fillText("Rotate:Z, X",  xPos,yPos+ySeperation*line++);
 	context.fillText("Drop:Space",   xPos,yPos+ySeperation*line++);
 	context.fillText("Mute:M",       xPos,yPos+ySeperation*line++);
+	context.fillText("Pause:Esc",    xPos,yPos+ySeperation*line++);
 }
 
 function draw(time)
