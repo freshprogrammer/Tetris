@@ -12,7 +12,8 @@ BoardSlot = {
 	Block4 : 4,
 	Block5 : 5,
 	Block6 : 6,
-	Block7 : 7
+	Block7 : 7,
+	Block0 : 8
 }
 MusicState = {
 	Mute : 'Muted',
@@ -62,7 +63,7 @@ var highestDificultyLevel = 10;
 var linesPerLevel = 10;
 
 //animation
-var lineAnimDurration = 1000;
+var lineAnimDurration = 1100;
 var lineAnimFlickerCount = 2;
 var timeSinceAnimationStarted = 0;
 
@@ -132,6 +133,8 @@ function loadAssets()
 {
 	backgroundImage = new Image();
 	backgroundImage.src = 'assets/pics/Background2.jpg';
+	block0Image = new Image();
+	block0Image.src = 'assets/pics/block0.jpg';
 	block1Image = new Image();
 	block1Image.src = 'assets/pics/block1.jpg';
 	block2Image = new Image();
@@ -475,13 +478,18 @@ function checkAndClearLines()
 	return linesCleared;
 }
 
+function setLineSlot(lineY, type)
+{
+	for (var x = 0; x < boardWidth; x++)
+	{
+		boardSlots[x][lineY]=type;
+	}
+}
+
 function clearLine(clearY)
 {
 	//clear
-	for (var x = 0; x < boardWidth; x++)
-	{
-		boardSlots[x][clearY]=BoardSlot.Empty;
-	}
+	setLineSlot(clearY,BoardSlot.Empty);
 	//move down
 	for (var y = clearY; y > 0; y--)
 	{
@@ -744,6 +752,21 @@ function update(time)
 		{
 			timeSinceAnimationStarted+=time;
 			
+			var animationBlockType;
+			if(timeSinceAnimationStarted<lineAnimDurration*1/4)
+				animationBlockType = BoardSlot.Block0;
+			else if(timeSinceAnimationStarted<lineAnimDurration*2/4)
+				animationBlockType = BoardSlot.Empty;
+			else if(timeSinceAnimationStarted<lineAnimDurration*3/4)
+				animationBlockType = BoardSlot.Block0;
+			else
+				animationBlockType = BoardSlot.Empty;
+			for (i = 0; i < linesToClear.length; i++)
+			{
+				setLineSlot(linesToClear[i],animationBlockType);
+			}
+			
+			
 			//clear lines and return to game
 			if(timeSinceAnimationStarted>=lineAnimDurration)
 			{
@@ -754,6 +777,7 @@ function update(time)
 				linesToClear = [];
 				
 				//continue game
+				gameInput.clearKeys();
 				gameState = GameState.Playing;
 				if(!spawnNewPiece())
 				{
@@ -819,7 +843,7 @@ function draw(time)
 	//render game
 	//background
 	context.drawImage(backgroundImage, boardPos.X,boardPos.Y);
-	
+		
 	//draw board
 	for (var x = 0; x < boardWidth; x++) 
 	{
@@ -832,18 +856,24 @@ function draw(time)
 		}
 	}
 	
-	//next piece
-	for(var i=0; i<4; i++)
+	if(!gamePaused)
 	{
-		var renderPreviewSlot = new Point(11,4);
-		var pos = getSlotPos(renderPreviewSlot.X+nextPieceBlocks[i].X,renderPreviewSlot.Y+nextPieceBlocks[i].Y);
-		context.drawImage(getBlockImage(nextPieceSlotType), pos.X,pos.Y);
-	}
-	//active piece
-	for(var i=0; i<4; i++)
-	{
-		var pos = getSlotPos(pieceSlot.X+pieceBlocks[i].X,pieceSlot.Y+pieceBlocks[i].Y);
-		context.drawImage(getBlockImage(pieceSlotType), pos.X,pos.Y);
+		//next piece
+		for(var i=0; i<4; i++)
+		{
+			var renderPreviewSlot = new Point(11,4);
+			var pos = getSlotPos(renderPreviewSlot.X+nextPieceBlocks[i].X,renderPreviewSlot.Y+nextPieceBlocks[i].Y);
+			context.drawImage(getBlockImage(nextPieceSlotType), pos.X,pos.Y);
+		}
+		if(gameState==GameState.Playing)
+		{
+			//active piece
+			for(var i=0; i<4; i++)
+			{
+				var pos = getSlotPos(pieceSlot.X+pieceBlocks[i].X,pieceSlot.Y+pieceBlocks[i].Y);
+				context.drawImage(getBlockImage(pieceSlotType), pos.X,pos.Y);
+			}
+		}
 	}
 	
 	if(gameState==GameState.GameOver)
@@ -883,6 +913,7 @@ function getBlockImage(slot)
 	if(slot==BoardSlot.Block5)return block5Image;
 	if(slot==BoardSlot.Block6)return block6Image;
 	if(slot==BoardSlot.Block7)return block7Image;
+	if(slot==BoardSlot.Block0)return block0Image;
 	return null;
 }
 
