@@ -2,6 +2,7 @@ GameState = {
     Menu : 'Menu',
     Playing : 'Playing',
     LineAnimating : 'LineAnimating',
+    NewGameAnimation : 'NewGameAnimation',
 	GameOver : 'GameOver'
 }
 BoardSlot = {
@@ -65,6 +66,7 @@ var linesPerLevel = 10;
 //animation
 var lineAnimDurration = 1100;
 var lineAnimFlickerCount = 2;
+var newGameAnimDurration = 2000;
 var timeSinceAnimationStarted = 0;
 
 //game variables
@@ -125,12 +127,24 @@ function gameBootstrap()
 	canvas.addEventListener('mouseup',   function(evt) {mouseUp(evt);}, false);
 	document.addEventListener('keydown', function(evt) {keyDown(evt);}, false);
 	document.addEventListener('keyup',   function(evt) {keyUp(evt);}, false);
+	
+	//setup game for first run
+	//systems
+	
+	//game objects
+	
+	//start clock
+	lastTickTime = window.performance.now();
+	tick();
+	rootTimerObject = setInterval(function(){tick();}, tickDelay);
+	
 	runNewGameAnimation();
 }
 
 function runNewGameAnimation()
 {
-	gameStart();
+	gameState = GameState.NewGameAnimation;
+	timeSinceAnimationStarted=0;
 }
 
 function loadAssets()
@@ -234,7 +248,7 @@ function processInput(time)
 
 function gamePause()
 {
-	if(gameState==GameState.Playing || gameState==GameState.Animating)
+	if(gameState==GameState.Playing || gameState==GameState.LineAnimating)
 	{
 		gamePaused = !gamePaused;
 		if(gamePaused)
@@ -249,15 +263,6 @@ function gamePause()
 
 function gameStart()
 {
-	//setup game for first run
-	//systems
-	
-	//game objects
-	
-	//start clock
-	lastTickTime = window.performance.now();
-	tick();
-	rootTimerObject = setInterval(function(){tick();}, tickDelay);
 	clearBoard();
 	resetScore();
 	gameState = GameState.Playing;
@@ -704,7 +709,7 @@ function getBlocksForPiece(type)
 
 function runClearLineAnimation()
 {
-	gameState=GameState.Animating;
+	gameState=GameState.LineAnimating;
 	timeSinceAnimationStarted=0;
 	stopwatch.stop();
 }
@@ -772,7 +777,17 @@ function update(time)
 					snapPiece();
 			}
 		}
-		else if(gameState==GameState.Animating)
+		else if(gameState==GameState.NewGameAnimation)
+		{
+			timeSinceAnimationStarted+=time;
+			
+			//clear lines and return to game
+			if(timeSinceAnimationStarted>=newGameAnimDurration)
+			{
+				gameStart();
+			}
+		}
+		else if(gameState==GameState.LineAnimating)
 		{
 			timeSinceAnimationStarted+=time;
 			
@@ -854,64 +869,92 @@ function draw(time)
 	//render game
 	//background
 	context.drawImage(backgroundImage, boardPos.X,boardPos.Y);
-		
-	//draw board
-	for (var x = 0; x < boardWidth; x++) 
-	{
-		for (var y = 0; y < boardHeight; y++) 
-		{
-			var blockPos = getSlotPos(x,y);
-			var img = getBlockImage(boardSlots[x][y]);
-			if(img!=null)
-				context.drawImage(getBlockImage(boardSlots[x][y]), blockPos.X,blockPos.Y);
-		}
-	}
 	
-	if(!gamePaused)
+	if(gameState==GameState.NewGameAnimation)
 	{
-		//next piece
-		for(var i=0; i<4; i++)
+		var animationBlockType1 = BoardSlot.Empty;
+		var animationBlockType2 = BoardSlot.Block0;
+		
+		var animationProgress = timeSinceAnimationStarted/newGameAnimDurration;
+		var totalBlocks = boardWidth*boardHeight;
+		var blockNo = 0;
+		for (var y = 0; y < boardHeight; y++)
 		{
-			var renderPreviewSlot = new Point(11,4);
-			var pos = getSlotPos(renderPreviewSlot.X+nextPieceBlocks[i].X,renderPreviewSlot.Y+nextPieceBlocks[i].Y);
-			context.drawImage(getBlockImage(nextPieceSlotType), pos.X,pos.Y);
-		}
-		if(gameState==GameState.Playing)
-		{
-			//active piece
-			for(var i=0; i<4; i++)
+			for (var x = 0; x < boardWidth; x++)
 			{
-				var pos = getSlotPos(pieceSlot.X+pieceBlocks[i].X,pieceSlot.Y+pieceBlocks[i].Y);
-				context.drawImage(getBlockImage(pieceSlotType), pos.X,pos.Y);
+				var blockPos = getSlotPos(x,y);
+				blockNo++;
+				var img;
+				if(blockNo/totalBlocks<animationProgress)
+					img = getBlockImage(animationBlockType1);
+				else
+					img = getBlockImage(animationBlockType2);
+				
+				if(img!=null)
+					context.drawImage(img, blockPos.X,blockPos.Y);
 			}
 		}
 	}
-	
-	if(gameState==GameState.GameOver)
+	else
 	{
-		var size = 45;
-		var loc = new Point(boardPos.X,boardPos.Y+boardHeight*blockSize/2+size/2)
-		context.font=size+"px verdana";
-		context.shadowColor="black";
-		context.shadowBlur=7;
-		context.lineWidth=5;
-		context.strokeText("Game Over",loc.X,loc.Y);
-		context.shadowBlur=0;
-		context.fillStyle="white";
-		context.fillText("Game Over",loc.X,loc.Y);
-	}
-	else if(gamePaused)
-	{
-		var size = 72;
-		var loc = new Point(boardPos.X,boardPos.Y+boardHeight*blockSize/2+size/2)
-		context.font=size+"px verdana";
-		context.shadowColor="black";
-		context.shadowBlur=7;
-		context.lineWidth=5;
-		context.strokeText("Paused",loc.X,loc.Y);
-		context.shadowBlur=0;
-		context.fillStyle="white";
-		context.fillText("Paused",loc.X,loc.Y);
+		//draw board
+		for (var x = 0; x < boardWidth; x++)
+		{
+			for (var y = 0; y < boardHeight; y++)
+			{
+				var blockPos = getSlotPos(x,y);
+				var img = getBlockImage(boardSlots[x][y]);
+				if(img!=null)
+					context.drawImage(getBlockImage(boardSlots[x][y]), blockPos.X,blockPos.Y);
+			}
+		}
+		
+		if(!gamePaused || gameState==GameState.GameOver)
+		{
+			//next piece
+			for(var i=0; i<4; i++)
+			{
+				var renderPreviewSlot = new Point(11,4);
+				var pos = getSlotPos(renderPreviewSlot.X+nextPieceBlocks[i].X,renderPreviewSlot.Y+nextPieceBlocks[i].Y);
+				context.drawImage(getBlockImage(nextPieceSlotType), pos.X,pos.Y);
+			}
+			if(gameState==GameState.Playing || gameState==GameState.GameOver)
+			{
+				//active piece
+				for(var i=0; i<4; i++)
+				{
+					var pos = getSlotPos(pieceSlot.X+pieceBlocks[i].X,pieceSlot.Y+pieceBlocks[i].Y);
+					context.drawImage(getBlockImage(pieceSlotType), pos.X,pos.Y);
+				}
+			}
+		}
+		
+		if(gameState==GameState.GameOver)
+		{
+			var size = 45;
+			var loc = new Point(boardPos.X,boardPos.Y+boardHeight*blockSize/2+size/2)
+			context.font=size+"px verdana";
+			context.shadowColor="black";
+			context.shadowBlur=7;
+			context.lineWidth=5;
+			context.strokeText("Game Over",loc.X,loc.Y);
+			context.shadowBlur=0;
+			context.fillStyle="white";
+			context.fillText("Game Over",loc.X,loc.Y);
+		}
+		else if(gamePaused)
+		{
+			var size = 72;
+			var loc = new Point(boardPos.X,boardPos.Y+boardHeight*blockSize/2+size/2)
+			context.font=size+"px verdana";
+			context.shadowColor="black";
+			context.shadowBlur=7;
+			context.lineWidth=5;
+			context.strokeText("Paused",loc.X,loc.Y);
+			context.shadowBlur=0;
+			context.fillStyle="white";
+			context.fillText("Paused",loc.X,loc.Y);
+		}
 	}
 }
 
