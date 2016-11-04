@@ -1,7 +1,7 @@
 GameState = {
     Menu : 'Menu',
     Playing : 'Playing',
-    Animating : 'Animating',
+    LineAnimating : 'LineAnimating',
 	GameOver : 'GameOver'
 }
 BoardSlot = {
@@ -125,7 +125,11 @@ function gameBootstrap()
 	canvas.addEventListener('mouseup',   function(evt) {mouseUp(evt);}, false);
 	document.addEventListener('keydown', function(evt) {keyDown(evt);}, false);
 	document.addEventListener('keyup',   function(evt) {keyUp(evt);}, false);
-	
+	runNewGameAnimation();
+}
+
+function runNewGameAnimation()
+{
 	gameStart();
 }
 
@@ -702,6 +706,26 @@ function runClearLineAnimation()
 {
 	gameState=GameState.Animating;
 	timeSinceAnimationStarted=0;
+	stopwatch.stop();
+}
+
+function stopClearLineAnimation()
+{
+	for (i = 0; i < linesToClear.length; i++)
+	{
+		clearLine(linesToClear[i]);
+	}
+	linesToClear = [];
+	
+	//continue game
+	gameInput.clearKeys();
+	gameState = GameState.Playing;
+	stopwatch.start();
+	if(!spawnNewPiece())
+	{
+		//game over
+		gameOver();
+	}
 }
 
 function update(time)
@@ -770,20 +794,7 @@ function update(time)
 			//clear lines and return to game
 			if(timeSinceAnimationStarted>=lineAnimDurration)
 			{
-				for (i = 0; i < linesToClear.length; i++)
-				{
-					clearLine(linesToClear[i]);
-				}
-				linesToClear = [];
-				
-				//continue game
-				gameInput.clearKeys();
-				gameState = GameState.Playing;
-				if(!spawnNewPiece())
-				{
-					//game over
-					gameOver();
-				}
+				stopClearLineAnimation();
 			}
 		}
 	}
