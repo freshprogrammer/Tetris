@@ -68,6 +68,7 @@ var boardHeight = 20;
 var boardPos = new Point(200,100);
 var boardSlots = Create2DArray(boardWidth);
 clearBoard();
+var pieceSettledCount = 0;//number of ticks the active pice has settled
 
 //piece & nextPiece
 var nextPieceSlotType = BoardSlot.Block7;
@@ -334,6 +335,7 @@ function clearBoard()
 function movePiece(dX,dY)
 {
 	var valid = true;
+	var moved = dX!=0 || dY!=0;
 	for(var i=0; i<4; i++)
 	{
 		var slot = new Point(pieceSlot.X+pieceBlocks[i].X+dX,pieceSlot.Y+pieceBlocks[i].Y+dY);
@@ -343,8 +345,12 @@ function movePiece(dX,dY)
 	}
 	if(valid)
 	{
-		pieceSlot.X = pieceSlot.X+dX;
-		pieceSlot.Y = pieceSlot.Y+dY;
+		if(moved)
+		{
+			pieceSettledCount = 0;
+			pieceSlot.X = pieceSlot.X+dX;
+			pieceSlot.Y = pieceSlot.Y+dY;
+		}
 	}
 	return valid;
 }
@@ -679,6 +685,19 @@ function getBlocksForPiece(type)
 	return blocks;
 }
 
+function pieceTickDown()
+{
+	if(!movePiece(0,1))
+	{
+		if(pieceSettledCount>=1)
+		{
+			snapPiece();
+			pieceSettledCount = 0;
+		}
+		pieceSettledCount++;
+	}
+}
+
 function update(time)
 {
 	processInput(time);
@@ -718,9 +737,7 @@ function update(time)
 			if(timeSinceLastStep>=pieceDropTime)
 			{
 				timeSinceLastStep = 0;
-					
-				if(!movePiece(0,1))
-					snapPiece();
+				pieceTickDown();
 			}
 		}
 	}
