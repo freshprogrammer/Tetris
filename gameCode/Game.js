@@ -61,6 +61,11 @@ var timeSinceLastInput = 0;
 var highestDificultyLevel = 10;
 var linesPerLevel = 10;
 
+//animation
+var lineAnimDurration = 1000;
+var lineAnimFlickerCount = 2;
+var timeSinceAnimationStarted = 0;
+
 //game variables
 var blockSize = 26;
 var boardWidth = 10;
@@ -68,6 +73,7 @@ var boardHeight = 20;
 var boardPos = new Point(200,100);
 var boardSlots = Create2DArray(boardWidth);
 clearBoard();
+var linesToClear = [];
 
 //piece & nextPiece
 var nextPieceSlotType = BoardSlot.Block7;
@@ -422,10 +428,13 @@ function snapPiece()
 	scorePiecePlacement();
 	var linesCleared = checkAndClearLines();
 	playPieceSnapSound();
-	if(!spawnNewPiece())
+	if(linesCleared==0)
 	{
-		//game over
-		gameOver();
+		if(!spawnNewPiece())
+		{
+			//game over
+			gameOver();
+		}
 	}
 }
 
@@ -454,13 +463,15 @@ function checkAndClearLines()
 		}
 		if(fullLine)
 		{
-			clearLine(y);
-			y--;//prevent skips
+			linesToClear.push(y);
 			linesCleared++;
 		}
 	}
 	if(linesCleared>0)
+	{
 		scoreLinesClear(linesCleared);
+		runClearLineAnimation();
+	}
 	return linesCleared;
 }
 
@@ -679,6 +690,12 @@ function getBlocksForPiece(type)
 	return blocks;
 }
 
+function runClearLineAnimation()
+{
+	gameState=GameState.Animating;
+	timeSinceAnimationStarted=0;
+}
+
 function update(time)
 {
 	processInput(time);
@@ -721,6 +738,28 @@ function update(time)
 					
 				if(!movePiece(0,1))
 					snapPiece();
+			}
+		}
+		else if(gameState==GameState.Animating)
+		{
+			timeSinceAnimationStarted+=time;
+			
+			//clear lines and return to game
+			if(timeSinceAnimationStarted>=lineAnimDurration)
+			{
+				for (i = 0; i < linesToClear.length; i++)
+				{
+					clearLine(linesToClear[i]);
+				}
+				linesToClear = [];
+				
+				//continue game
+				gameState = GameState.Playing;
+				if(!spawnNewPiece())
+				{
+					//game over
+					gameOver();
+				}
 			}
 		}
 	}
