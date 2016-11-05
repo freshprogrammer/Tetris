@@ -1,8 +1,10 @@
-## JS Tetris
+## Javascript Tetris
 - By Fresh
 
 ### How To Play
-- n/a
+- Move the tetrominoes left and right with the arrow keys
+- Use 'Z' and 'X' to rotate the tetrominoes to fit
+- Complete lines to gain points and raise the level
 
 ### Controls
 - arrow keys to move
