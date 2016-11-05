@@ -540,7 +540,7 @@ function clearLine(clearY)
 
 function toggleSound()
 {
-	if(gamePaused)
+	if(gamePaused || gameState==GameState.GameOver || gameState==GameState.GameOverAnimation)
 		return;
 	
 	if(musicState==MusicState.Mute)musicState = MusicState.Music;
