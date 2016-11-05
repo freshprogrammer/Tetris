@@ -3,6 +3,7 @@ GameState = {
     Playing : 'Playing',
     LineAnimating : 'LineAnimating',
     NewGameAnimation : 'NewGameAnimation',
+	GameOverAnimation : 'GameOverAnimation',
 	GameOver : 'GameOver'
 }
 BoardSlot = {
@@ -64,9 +65,10 @@ var highestDificultyLevel = 10;
 var linesPerLevel = 10;
 
 //animation
-var lineAnimDurration = 1100;
+var lineAnimDurration = 1000;
 var lineAnimFlickerCount = 2;
-var newGameAnimDurration = 2000;
+var newGameAnimDurration = 1000;
+var gameOverAnimDurration = 1000;
 var timeSinceAnimationStarted = 0;
 
 //game variables
@@ -430,13 +432,18 @@ function dropPiece()
 	snapPiece();
 }
 
-function snapPiece()
+function lockInPiece()
 {
 	for(var i=0; i<4; i++)
 	{
 		var slot = new Point(pieceSlot.X+pieceBlocks[i].X,pieceSlot.Y+pieceBlocks[i].Y);
 		boardSlots[slot.X][slot.Y] = pieceSlotType;
 	}
+}
+
+function snapPiece()
+{
+	lockInPiece();
 	scorePiecePlacement();
 	var linesCleared = checkAndClearLines();
 	playPieceSnapSound();
@@ -453,9 +460,9 @@ function snapPiece()
 function gameOver()
 {
 	stopwatch.stop();
-	gamePaused = true;
-	gameState = GameState.GameOver;
 	toggleMusicPause();
+	lockInPiece();
+	runGameOverAnimation();
 }
 
 function checkAndClearLines()
@@ -497,9 +504,7 @@ function setLineSlot(lineY, type)
 
 function clearLine(clearY)
 {
-	//clear
-	setLineSlot(clearY,BoardSlot.Empty);
-	//move down
+	//move down - replace to block/blank
 	for (var y = clearY; y > 0; y--)
 	{
 		for (var x = 0; x < boardWidth; x++)
@@ -707,11 +712,39 @@ function getBlocksForPiece(type)
 	return blocks;
 }
 
+function runGameOverAnimation()
+{
+	gameState = GameState.GameOverAnimation;
+	timeSinceAnimationStarted = 0;
+}
+
+function stopGameOverAnimation()
+{
+	gameState=GameState.GameOver;
+}
+
 function runClearLineAnimation()
 {
 	gameState=GameState.LineAnimating;
 	timeSinceAnimationStarted=0;
 	stopwatch.stop();
+}
+
+function updateLineClearAnimation()
+{
+	var animationBlockType;
+	if(timeSinceAnimationStarted<lineAnimDurration*1/4)
+		animationBlockType = BoardSlot.Block0;
+	else if(timeSinceAnimationStarted<lineAnimDurration*2/4)
+		animationBlockType = BoardSlot.Empty;
+	else if(timeSinceAnimationStarted<lineAnimDurration*3/4)
+		animationBlockType = BoardSlot.Block0;
+	else
+		animationBlockType = BoardSlot.Empty;
+	for (i = 0; i < linesToClear.length; i++)
+	{
+		setLineSlot(linesToClear[i],animationBlockType);
+	}
 }
 
 function stopClearLineAnimation()
@@ -777,39 +810,26 @@ function update(time)
 					snapPiece();
 			}
 		}
-		else if(gameState==GameState.NewGameAnimation)
+		else if(gameState==GameState.LineAnimating || gameState==GameState.NewGameAnimation || gameState==GameState.GameOverAnimation)
 		{
 			timeSinceAnimationStarted+=time;
-			
-			//clear lines and return to game
-			if(timeSinceAnimationStarted>=newGameAnimDurration)
+			if(gameState==GameState.LineAnimating)
 			{
+				//clear lines and return to game
+				updateLineClearAnimation();
+				if(timeSinceAnimationStarted>=lineAnimDurration)
+				{
+					stopClearLineAnimation();
+				}
+			}
+			else if(gameState==GameState.NewGameAnimation && timeSinceAnimationStarted>=newGameAnimDurration)
+			{
+				//clear lines and return to game
 				gameStart();
 			}
-		}
-		else if(gameState==GameState.LineAnimating)
-		{
-			timeSinceAnimationStarted+=time;
-			
-			var animationBlockType;
-			if(timeSinceAnimationStarted<lineAnimDurration*1/4)
-				animationBlockType = BoardSlot.Block0;
-			else if(timeSinceAnimationStarted<lineAnimDurration*2/4)
-				animationBlockType = BoardSlot.Empty;
-			else if(timeSinceAnimationStarted<lineAnimDurration*3/4)
-				animationBlockType = BoardSlot.Block0;
-			else
-				animationBlockType = BoardSlot.Empty;
-			for (i = 0; i < linesToClear.length; i++)
+			else if(gameState==GameState.GameOverAnimation && timeSinceAnimationStarted>=gameOverAnimDurration)
 			{
-				setLineSlot(linesToClear[i],animationBlockType);
-			}
-			
-			
-			//clear lines and return to game
-			if(timeSinceAnimationStarted>=lineAnimDurration)
-			{
-				stopClearLineAnimation();
+				stopGameOverAnimation();
 			}
 		}
 	}
@@ -825,8 +845,8 @@ function drawFPS(context)
 
 	var line = 0;
 	context.fillText("Time:"+stopwatch.formattedTime(), xPos,yPos+ySeperation*line++);
-	context.fillText("Level:"+level,                    xPos,yPos+ySeperation*line++);
 	context.fillText("Score:"+score,                    xPos,yPos+ySeperation*line++);
+	context.fillText("Level:"+level,                    xPos,yPos+ySeperation*line++);
 	context.fillText("Lines:"+totalLinesCleared,        xPos,yPos+ySeperation*line++);
 	context.fillText("Tetris:"+tetrises,                xPos,yPos+ySeperation*line++);
 	line++;                                             
@@ -851,10 +871,8 @@ function drawFPS(context)
 function draw(time)
 {
 	var context = canvas.getContext("2d");
-	
 	context.clearRect (0,0,gameWidth,gameHeight);
 
-	
 	// Create gradient
 	var grd = context.createLinearGradient(0,0,0,gameHeight);
 	grd.addColorStop(0,"white");
@@ -872,12 +890,9 @@ function draw(time)
 	
 	if(gameState==GameState.NewGameAnimation)
 	{
-		var animationBlockType1 = BoardSlot.Empty;
-		var animationBlockType2 = BoardSlot.Block0;
-		
-		var animationProgress = timeSinceAnimationStarted/newGameAnimDurration;
-		var totalBlocks = boardWidth*boardHeight;
 		var blockNo = 0;
+		var totalBlocks = boardWidth*boardHeight;
+		var animationProgress = timeSinceAnimationStarted/newGameAnimDurration;
 		for (var y = 0; y < boardHeight; y++)
 		{
 			for (var x = 0; x < boardWidth; x++)
@@ -886,49 +901,33 @@ function draw(time)
 				blockNo++;
 				var img;
 				if(blockNo/totalBlocks<animationProgress)
-					img = getBlockImage(animationBlockType1);
+					img = getBlockImage(BoardSlot.Empty);
 				else
-					img = getBlockImage(animationBlockType2);
+					img = getBlockImage(BoardSlot.Block0);
 				
 				if(img!=null)
 					context.drawImage(img, blockPos.X,blockPos.Y);
 			}
 		}
 	}
-	else
+	else if(gameState==GameState.GameOverAnimation || gameState==GameState.GameOver)
 	{
-		//draw board
-		for (var x = 0; x < boardWidth; x++)
+		var blockNo = 0;
+		var totalBlocks = boardWidth*boardHeight;
+		var animationProgress = timeSinceAnimationStarted/gameOverAnimDurration;
+		for (var y = boardHeight-1; y >= 0; y--)
 		{
-			for (var y = 0; y < boardHeight; y++)
+			for (var x = boardWidth-1; x >= 0; x--)
 			{
 				var blockPos = getSlotPos(x,y);
+				blockNo++;
+				if(blockNo/totalBlocks<animationProgress)
+					boardSlots[x][y] = BoardSlot.Block0;
 				var img = getBlockImage(boardSlots[x][y]);
 				if(img!=null)
 					context.drawImage(getBlockImage(boardSlots[x][y]), blockPos.X,blockPos.Y);
 			}
 		}
-		
-		if(!gamePaused || gameState==GameState.GameOver)
-		{
-			//next piece
-			for(var i=0; i<4; i++)
-			{
-				var renderPreviewSlot = new Point(11,4);
-				var pos = getSlotPos(renderPreviewSlot.X+nextPieceBlocks[i].X,renderPreviewSlot.Y+nextPieceBlocks[i].Y);
-				context.drawImage(getBlockImage(nextPieceSlotType), pos.X,pos.Y);
-			}
-			if(gameState==GameState.Playing || gameState==GameState.GameOver)
-			{
-				//active piece
-				for(var i=0; i<4; i++)
-				{
-					var pos = getSlotPos(pieceSlot.X+pieceBlocks[i].X,pieceSlot.Y+pieceBlocks[i].Y);
-					context.drawImage(getBlockImage(pieceSlotType), pos.X,pos.Y);
-				}
-			}
-		}
-		
 		if(gameState==GameState.GameOver)
 		{
 			var size = 45;
@@ -942,7 +941,19 @@ function draw(time)
 			context.fillStyle="white";
 			context.fillText("Game Over",loc.X,loc.Y);
 		}
-		else if(gamePaused)
+	}
+	else
+	{
+		drawBoard(context);
+		
+		if(!gamePaused)
+		{
+			drawNextPiece(context);
+			if(gameState==GameState.Playing || gameState==GameState.GameOver || gameState==GameState.GameOverAnimation)
+				drawActivePiece(context);
+		}
+		
+		if(gamePaused)
 		{
 			var size = 72;
 			var loc = new Point(boardPos.X,boardPos.Y+boardHeight*blockSize/2+size/2)
@@ -954,6 +965,39 @@ function draw(time)
 			context.shadowBlur=0;
 			context.fillStyle="white";
 			context.fillText("Paused",loc.X,loc.Y);
+		}
+	}
+}
+
+function drawActivePiece(context)
+{
+	for(var i=0; i<4; i++)
+	{
+		var pos = getSlotPos(pieceSlot.X+pieceBlocks[i].X,pieceSlot.Y+pieceBlocks[i].Y);
+		context.drawImage(getBlockImage(pieceSlotType), pos.X,pos.Y);
+	}
+}
+
+function drawNextPiece(context)
+{
+	for(var i=0; i<4; i++)
+	{
+		var renderPreviewSlot = new Point(11,4);
+		var pos = getSlotPos(renderPreviewSlot.X+nextPieceBlocks[i].X,renderPreviewSlot.Y+nextPieceBlocks[i].Y);
+		context.drawImage(getBlockImage(nextPieceSlotType), pos.X,pos.Y);
+	}
+}
+
+function drawBoard(context)
+{
+	for (var x = 0; x < boardWidth; x++)
+	{
+		for (var y = 0; y < boardHeight; y++)
+		{
+			var blockPos = getSlotPos(x,y);
+			var img = getBlockImage(boardSlots[x][y]);
+			if(img!=null)
+				context.drawImage(getBlockImage(boardSlots[x][y]), blockPos.X,blockPos.Y);
 		}
 	}
 }
