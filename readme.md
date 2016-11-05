@@ -1,4 +1,4 @@
-## Javascript Tetris
+## JavaScript Tetris
 - By Fresh
 
 ### How To Play
