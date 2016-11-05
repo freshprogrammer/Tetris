@@ -369,6 +369,23 @@ function movePiece(dX,dY)
 	return valid;
 }
 
+function movePieceIgnoreBoardBlocks(dX,dY)
+{
+	var valid = true;
+	for(var i=0; i<4; i++)
+	{
+		var slot = new Point(pieceSlot.X+pieceBlocks[i].X+dX,pieceSlot.Y+pieceBlocks[i].Y+dY);
+		
+		valid = valid && (slot.X>=0 && slot.X<boardWidth && slot.Y>=0 && slot.Y<boardHeight);
+	}
+	if(valid)
+	{
+		pieceSlot.X = pieceSlot.X+dX;
+		pieceSlot.Y = pieceSlot.Y+dY;
+	}
+	return valid;
+}
+
 function rotatePiece(clockwise)
 {
 	var rotateArea = 2;
@@ -648,10 +665,10 @@ function spawnNewPiece()
 	pieceBlocks = getBlocksForPiece(pieceSlotType);
 	
 	//tweak blocks to center and up as necisarry
-	movePiece(0,-1);
+	movePieceIgnoreBoardBlocks(0,-1);
 	if(pieceSlotType == BoardSlot.Block7)
 	{//block
-		movePiece(1,0);
+		movePieceIgnoreBoardBlocks(1,0);
 	}
 	
 	return movePiece(0,0);
