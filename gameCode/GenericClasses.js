@@ -159,7 +159,10 @@ var	Stopwatch = function()
 		s = Math.floor( time / 1000 );
 		ms = time % 1000;
 
-		newTime = pad(h, 2) + ':' + pad(m, 2) + ':' + pad(s, 2) + ':' + pad(ms, 3);
+		//newTime = pad(h, 2) + ':' + pad(m, 2) + ':' + pad(s, 2) + ':' + pad(ms, 3);
+		
+		m += h*60;
+		newTime = pad(m, 2) + ':' + pad(s, 2);
 		return newTime;
 	}
 };

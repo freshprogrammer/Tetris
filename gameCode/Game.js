@@ -32,6 +32,7 @@ var tickDelay = 4;
 var lastTickTime = 0;
 var gameWidth;
 var gameHeight;
+var showDebugInfo = true;
 
 var backgroundMusic;
 var musicState = MusicState.Music;
@@ -76,7 +77,7 @@ var timeSinceAnimationStarted = 0;
 var blockSize = 26;
 var boardWidth = 10;
 var boardHeight = 20;
-var boardPos = new Point(200,100);
+var boardPos = new Point(50,100);
 var boardSlots = Create2DArray(boardWidth);
 clearBoard();
 var linesToClear = [];
@@ -282,43 +283,6 @@ function gameStart()
 function gameStop()
 {
     clearInterval(rootTimerObject);
-}
-
-function renderDemo(context)
-{
-	if(demoRight)
-		demoX++;
-	else	
-		demoX--;
-		
-	if(demoX == gameWidth)
-		demoRight = false;
-	else if(demoX == 1)
-		demoRight = true;
-	
-	if(demoRight)
-		demoX++;
-	else	
-		demoX--;
-		
-	if(demoX == gameWidth)
-		demoRight = false;
-	else if(demoX == 1)
-		demoRight = true;
-
-	var gWidth=50;
-	// Create gradient
-	var grd = context.createLinearGradient(demoX+gameWidth/2,0,demoX+gWidth/2,demoX);
-	grd.addColorStop(0,"cyan");
-	grd.addColorStop(1,"red");
-
-	// Fill with gradient
-	context.fillStyle = grd;
-	context.fillRect(0,0,gameWidth,gameHeight);
-	
-	context.font = '40pt Calibri';
-	context.fillStyle = 'black';
-	context.fillText("Gradient X:"+demoX,demoX,90);
 }
 
 function tick()
@@ -883,37 +847,40 @@ function update(time)
 	}
 }
 
-function drawFPS(context)
+function drawInfo(context)
 {
-	var xPos = 5;
-	var yPos = 25;
+	var xPos = boardPos.X + boardWidth * blockSize + 15;
+	var yPos = boardPos.Y + 25;
 	var ySeperation = 25;
 	context.font = '20pt Calibri';
 	context.fillStyle = 'black';
 
 	var line = 0;
-	context.fillText("Time:"+stopwatch.formattedTime(), xPos,yPos+ySeperation*line++);
 	context.fillText("Score:"+score,                    xPos,yPos+ySeperation*line++);
 	context.fillText("Level:"+level,                    xPos,yPos+ySeperation*line++);
 	context.fillText("Lines:"+totalLinesCleared,        xPos,yPos+ySeperation*line++);
 	context.fillText("Tetris:"+tetrises,                xPos,yPos+ySeperation*line++);
-	line++;                                             
-	//context.fillText("FPS:"+lastIntervalFPS+" - "+framesThisInterval,xPos,yPos+ySeperation*line++);
-	context.fillText("FPS:"+lastIntervalFPS,            xPos,yPos+ySeperation*line++);
-	context.fillText("State:"+gameState,                xPos,yPos+ySeperation*line++);
-	context.fillText("Sound:"+musicState,               xPos,yPos+ySeperation*line++);
-	context.fillText("Keys:"+keysPressed,               xPos,yPos+ySeperation*line++);
-	context.fillText("Input:"+gameInput,                xPos,yPos+ySeperation*line++);
+	context.fillText("Time:"+stopwatch.formattedTime(), xPos,yPos+ySeperation*line++);
+	line++;
+	line++;
+	context.fillText("Controls:",                       xPos,yPos+ySeperation*line++);
+	context.fillText("   Move: Arrows",                     xPos,yPos+ySeperation*line++);
+	context.fillText("   Rotate: Z, X",                     xPos,yPos+ySeperation*line++);
+	context.fillText("   Drop: Space",                      xPos,yPos+ySeperation*line++);
+	context.fillText("   Mute: M",                          xPos,yPos+ySeperation*line++);
+	context.fillText("   Pause: Esc",                       xPos,yPos+ySeperation*line++);
 	
-	
-	xPos = boardPos.X + boardWidth*blockSize+xPos+5;
-	line = 0;
-	context.fillText("Controls:",    xPos,yPos+ySeperation*line++);
-	context.fillText("Move:Arrows",  xPos,yPos+ySeperation*line++);
-	context.fillText("Rotate:Z, X",  xPos,yPos+ySeperation*line++);
-	context.fillText("Drop:Space",   xPos,yPos+ySeperation*line++);
-	context.fillText("Mute:M",       xPos,yPos+ySeperation*line++);
-	context.fillText("Pause:Esc",    xPos,yPos+ySeperation*line++);
+	if(showDebugInfo)
+	{
+		line++;
+		line++;
+		context.fillText("FPS:"+lastIntervalFPS,            xPos,yPos+ySeperation*line++);
+		//context.fillText("FPS:"+lastIntervalFPS+" - "+framesThisInterval,xPos,yPos+ySeperation*line++);
+		context.fillText("State:"+gameState,                xPos,yPos+ySeperation*line++);
+		context.fillText("Sound:"+musicState,               xPos,yPos+ySeperation*line++);
+		context.fillText("Keys:"+keysPressed,               xPos,yPos+ySeperation*line++);
+		context.fillText("Input:"+gameInput,                xPos,yPos+ySeperation*line++);
+	}
 }
 
 function draw(time)
@@ -921,16 +888,9 @@ function draw(time)
 	var context = canvas.getContext("2d");
 	context.clearRect (0,0,gameWidth,gameHeight);
 
-	// Create gradient
-	var grd = context.createLinearGradient(0,0,0,gameHeight);
-	grd.addColorStop(0,"white");
-	grd.addColorStop(1,"black");
-
-	// Fill with gradient
-	context.fillStyle = grd;
+	//canvas background
+	context.fillStyle = "rgb(112, 146, 190)";
 	context.fillRect(0,0,gameWidth,gameHeight);
-	//renderDemo(context);
-	drawFPS(context);
 	
 	//render game
 	//background
@@ -1002,6 +962,8 @@ function draw(time)
 		if(gamePaused)
 			drawBigCenterString(72,"Paused", context);
 	}
+	
+	drawInfo(context);
 }
 
 function drawBigCenterString(size, text, context)
@@ -1032,9 +994,14 @@ function drawActivePiece(context)
 
 function drawNextPiece(context)
 {
+	var yShift = 0;
+	if(nextPieceSlotType==BoardSlot.Block5 || nextPieceSlotType==BoardSlot.Block6 || nextPieceSlotType==BoardSlot.Block7)
+	{
+		yShift=1;
+	}
 	for(var i=0; i<4; i++)
 	{
-		var renderPreviewSlot = new Point(boardWidth+1,4);
+		var renderPreviewSlot = new Point(3,-4+yShift);
 		var pos = getSlotPos(renderPreviewSlot.X+nextPieceBlocks[i].X,renderPreviewSlot.Y+nextPieceBlocks[i].Y);
 		context.drawImage(getBlockImage(nextPieceSlotType), pos.X,pos.Y, blockSize,blockSize);
 	}
