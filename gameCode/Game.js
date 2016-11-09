@@ -940,7 +940,7 @@ function draw(time)
 					img = getBlockImage(BoardSlot.Block0);
 				
 				if(img!=null)
-					context.drawImage(img, blockPos.X,blockPos.Y);
+					context.drawImage(img, blockPos.X,blockPos.Y, blockSize, blockSize);
 			}
 		}
 	}
@@ -959,7 +959,7 @@ function draw(time)
 					boardSlots[x][y] = BoardSlot.Block0;
 				var img = getBlockImage(boardSlots[x][y]);
 				if(img!=null)
-					context.drawImage(getBlockImage(boardSlots[x][y]), blockPos.X,blockPos.Y);
+					context.drawImage(getBlockImage(boardSlots[x][y]), blockPos.X,blockPos.Y, blockSize, blockSize);
 			}
 		}
 		if(gameState==GameState.GameOver)
@@ -1008,7 +1008,7 @@ function drawActivePiece(context)
 	for(var i=0; i<4; i++)
 	{
 		var pos = getSlotPos(pieceSlot.X+pieceBlocks[i].X,pieceSlot.Y+pieceBlocks[i].Y);
-		context.drawImage(getBlockImage(pieceSlotType), pos.X,pos.Y);
+		context.drawImage(getBlockImage(pieceSlotType), pos.X,pos.Y, blockSize, blockSize);
 	}
 }
 
@@ -1018,7 +1018,7 @@ function drawNextPiece(context)
 	{
 		var renderPreviewSlot = new Point(11,4);
 		var pos = getSlotPos(renderPreviewSlot.X+nextPieceBlocks[i].X,renderPreviewSlot.Y+nextPieceBlocks[i].Y);
-		context.drawImage(getBlockImage(nextPieceSlotType), pos.X,pos.Y);
+		context.drawImage(getBlockImage(nextPieceSlotType), pos.X,pos.Y, blockSize,blockSize);
 	}
 }
 
@@ -1031,7 +1031,7 @@ function drawBoard(context)
 			var blockPos = getSlotPos(x,y);
 			var img = getBlockImage(boardSlots[x][y]);
 			if(img!=null)
-				context.drawImage(getBlockImage(boardSlots[x][y]), blockPos.X,blockPos.Y);
+				context.drawImage(getBlockImage(boardSlots[x][y]), blockPos.X,blockPos.Y, blockSize, blockSize);
 		}
 	}
 }
