@@ -83,12 +83,15 @@ var lineAnimFlickerCount = 2;
 var newGameAnimDurration = 1000;
 var gameOverAnimDurration = 1000;
 var idleAnimationState = IdleAnimationState.Stopped;
-var idleDropRate = 150;
-var idleStoppingDropRate = 50;
-var idleSpawnRate = 1000;
+var idleDropRate = 180;
+var idleStoppingDropRate = 45;
+var idleSpawnRate = 500;
+var idleRotateRate = 1000;
 var idleTimeSinceDrop = 0;
 var idleTimeSinceSpawn = 0;
+var idleTimeSinceRotate = 0;
 var idlePieces = [];
+var idlePieceBlocks = [];
 var idlePiecePos = [];
 
 //game variables
@@ -466,6 +469,20 @@ function rotatePiece(clockwise)
 	}
 }
 
+function rotatePieceSimple(blocks)
+{
+	var rotateArea = 2;//all blocks - f different size pieces
+	//this is clockwise only for simplicity
+	for(var i=0; i<4; i++)
+	{
+		var x = rotateArea-blocks[i].Y;
+		var y = blocks[i].X;
+		blocks[i].X = x;
+		blocks[i].Y = y;
+	}
+	return blocks;
+}
+
 function dropPiece()
 {
 	while(movePiece(0,1));
@@ -617,7 +634,8 @@ function playLineClearSound(lines)
 	if(lines>=4)
 	{
 		if(musicState!=MusicState.Mute)
-			tetrisSound.play();
+		//	tetrisSound.play();
+			lineClearSound.play();
 	}
 	else
 	{
@@ -923,6 +941,7 @@ function drawInfo(context)
 		context.fillText("Keys:"+keysPressed,               xPos,yPos+ySeperation*line++);
 		context.fillText("Input:"+gameInput,                xPos,yPos+ySeperation*line++);
 		context.fillText("Idle:"+idleAnimationState,        xPos,yPos+ySeperation*line++);
+		context.fillText("  idles:"+idlePieces.length,      xPos,yPos+ySeperation*line++);
 	}
 }
 
@@ -950,7 +969,7 @@ function draw(time)
 	
 	if(idleAnimationState!=IdleAnimationState.Stopped)//this block is kept seperate because the idle animation can run behind the others
 	{
-		drawIdleAnimation(time);
+		drawIdleAnimation(time,context);
 	}
 	
 	if(gameState==GameState.NewGameAnimation)
@@ -1014,7 +1033,7 @@ function draw(time)
 	drawInfo(context);
 }
 
-function drawIdleAnimation(time)
+function drawIdleAnimation(time, context)
 {
 	//spawn
 	if(idleAnimationState==IdleAnimationState.Running)
@@ -1023,30 +1042,71 @@ function drawIdleAnimation(time)
 		if(idleTimeSinceSpawn>=idleSpawnRate)
 		{
 			idleTimeSinceSpawn = 0;
-			//do stuff
-			console.log("Idle - Spawn-");
+			//spawn random background piece
+			var x = Math.floor(Math.random()*gameWidth+blockSize*4)-blockSize*2
+			var rndType = Math.floor(Math.random()*7)+1;
+			var blocks = getBlocksForPiece(rndType);
+			
+			var turns = Math.floor(Math.random()*4);
+			for (i = 0; i < turns; i++)
+			{
+				blocks = rotatePieceSimple(blocks);
+			}
+			
+			idlePieces.push(rndType);
+			idlePieceBlocks.push(blocks);
+			idlePiecePos.push(new Point(x,-blockSize*2));
 		}
 	}
 	//drop
-	if(idleAnimationState==IdleAnimationState.Running || idleAnimationState==IdleAnimationState.Stopping)
+	var dropRate = idleDropRate;
+	if(idleAnimationState==IdleAnimationState.Stopping)
+		dropRate = idleStoppingDropRate;
+	idleTimeSinceDrop+=time;
+	if(idleTimeSinceDrop>=dropRate)
 	{
-		var dropRate = idleDropRate;
-		if(idleAnimationState==IdleAnimationState.Stopping)
-			dropRate = idleStoppingDropRate;
-		idleTimeSinceDrop+=time;
-		if(idleTimeSinceDrop>=idleDropRate)
+		idleTimeSinceDrop = 0;
+		//do stuff
+		var minY = gameHeight;
+		for (i = 0; i < idlePieces.length; i++)
 		{
-			idleTimeSinceDrop = 0;
-			//do stuff
-			//console.log("Idle - drop");
+			idlePiecePos[i].Y += blockSize;
+			if(idlePiecePos[i].Y > gameHeight+blockSize*2)
+			{
+				//trim this idle piece since its off the screen
+				idlePieces.splice(i,1);
+				idlePieceBlocks.splice(i,1);
+				idlePiecePos.splice(i,1);
+				i--;
+			}
+		}
+	}
+	//turn random piece
+	idleTimeSinceRotate+=time;
+	if(idleTimeSinceRotate>=idleRotateRate)
+	{
+		idleTimeSinceRotate = 0;
+		var i = Math.floor(Math.random()*idlePieces.length);
+		idlePieceBlocks[i] = rotatePieceSimple(idlePieceBlocks[i]);
+	}
+	//render
+	for (i = 0; i < idlePieces.length; i++)
+	{
+		for (k = 0; k < idlePieceBlocks[i].length; k++)
+		{
+			var x = idlePiecePos[i].X + idlePieceBlocks[i][k].X * blockSize;
+			var y = idlePiecePos[i].Y + idlePieceBlocks[i][k].Y * blockSize;
+			context.drawImage(getBlockImage(idlePieces[i]), x, y, blockSize, blockSize);
 		}
 	}
 	//check if clear
 	if(idleAnimationState==IdleAnimationState.Stopping)
 	{
 		//check to stop
-		//if(spawned==0)
+		if(idlePieces.length==0)
+		{
 			idleAnimationState = IdleAnimationState.Stopped;
+		}
 	}
 }
 
