@@ -83,8 +83,8 @@ var lineAnimFlickerCount = 2;
 var newGameAnimDurration = 1000;
 var gameOverAnimDurration = 1000;
 var idleAnimationState = IdleAnimationState.Stopped;
-var idleDropRate = 180;
-var idleStoppingDropRate = 45;
+var idleDropRate = 65;
+var idleStoppingDropRate = 0;
 var idleSpawnRate = 500;
 var idleRotateRate = 1000;
 var idleTimeSinceDrop = 0;
@@ -1036,6 +1036,7 @@ function draw(time)
 
 function drawIdleAnimation(time, context)
 {
+	var dropSpeed = 5;
 	//spawn
 	if(idleAnimationState==IdleAnimationState.Running)
 	{
@@ -1071,7 +1072,7 @@ function drawIdleAnimation(time, context)
 		var minY = gameHeight;
 		for (i = 0; i < idlePieces.length; i++)
 		{
-			idlePiecePos[i].Y += blockSize;
+			idlePiecePos[i].Y += dropSpeed;
 			if(idlePiecePos[i].Y > gameHeight+blockSize*2)
 			{
 				//trim this idle piece since its off the screen
