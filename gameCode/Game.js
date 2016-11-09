@@ -55,14 +55,15 @@ var demoRight = true;
 //tetris game system and timing
 var gameState = GameState.Menu;
 var gamePaused = false;
-var minPieceDropTime = 75;
+var minPieceDropTime = 65;
 var maxPieceDropTime = 1000;
 var pieceDropTime = maxPieceDropTime;
 var timeSinceLastStep = 0;
 var inputMoveTime = minPieceDropTime;
 var timeSinceLastInput = 0;
-var highestDificultyLevel = 10;
+var highestDificultyLevel = 20;
 var linesPerLevel = 10;
+var startLevel = 1;
 
 //animation
 var lineAnimDurration = 1000;
@@ -453,6 +454,7 @@ function dropPiece()
 {
 	while(movePiece(0,1));
 	snapPiece();
+	timeSinceLastStep = 0;
 }
 
 function lockInPiece()
@@ -560,7 +562,8 @@ function toggleSound()
 function resetScore()
 {
 	score = 0;
-	level = 1;
+	level = startLevel;
+	updateDropTimeForLevel();
 	totalLinesCleared = 0;
 	scoredTetrisLast = false;
 	tetrises = 0;
@@ -649,8 +652,19 @@ function scoreLinesClear(lines)
 	//level up
 	var oldLevel = level;
 	level = Math.floor(totalLinesCleared/linesPerLevel)+1;
+	if(level > highestDificultyLevel)
+		level = highestDificultyLevel;
+	if(level < oldLevel)
+		level = oldLevel;//for start level
 	if(level>oldLevel)
+	{
 		playLevelUpSound();
+		updateDropTimeForLevel();
+	}
+}
+
+function updateDropTimeForLevel()
+{
 	pieceDropTime = maxPieceDropTime - ((maxPieceDropTime - minPieceDropTime)/(highestDificultyLevel-1)) * (level-1);
 	if(pieceDropTime<minPieceDropTime)
 		pieceDropTime = minPieceDropTime;
