@@ -1008,14 +1008,19 @@ function drawActivePiece(context)
 
 function drawNextPiece(context)
 {
+	var xShift = 0;
 	var yShift = 0;
 	if(nextPieceSlotType==BoardSlot.Block5 || nextPieceSlotType==BoardSlot.Block6 || nextPieceSlotType==BoardSlot.Block7)
-	{
+	{//shfit z and square blocks down one
 		yShift=1;
+	}
+	if(nextPieceSlotType==BoardSlot.Block7)
+	{//shift square 1 to right
+		xShift=1;
 	}
 	for(var i=0; i<4; i++)
 	{
-		var renderPreviewSlot = new Point(3,-4+yShift);
+		var renderPreviewSlot = new Point(3+xShift,-4+yShift);
 		var pos = getSlotPos(renderPreviewSlot.X+nextPieceBlocks[i].X,renderPreviewSlot.Y+nextPieceBlocks[i].Y);
 		context.drawImage(getBlockImage(nextPieceSlotType), pos.X,pos.Y, blockSize,blockSize);
 	}
