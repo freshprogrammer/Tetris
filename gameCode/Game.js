@@ -950,9 +950,15 @@ function draw(time)
 	var context = canvas.getContext("2d");
 	context.clearRect (0,0,gameWidth,gameHeight);
 
+	
 	//canvas background
 	context.fillStyle = "rgb(112, 146, 190)";
 	context.fillRect(0,0,gameWidth,gameHeight);
+	
+	if(idleAnimationState!=IdleAnimationState.Stopped)//this block is kept seperate because the idle animation can run behind the others
+	{
+		drawIdleAnimation(time,context);
+	}
 	
 	//render game
 	//background
@@ -966,11 +972,6 @@ function draw(time)
 	context.rect (boardPos.X,boardPos.Y,boardWidth*blockSize,boardHeight*blockSize);
 	context.stroke();
 	//context.drawImage(backgroundImage, boardPos.X,boardPos.Y);
-	
-	if(idleAnimationState!=IdleAnimationState.Stopped)//this block is kept seperate because the idle animation can run behind the others
-	{
-		drawIdleAnimation(time,context);
-	}
 	
 	if(gameState==GameState.NewGameAnimation)
 	{
