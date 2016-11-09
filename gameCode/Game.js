@@ -23,6 +23,11 @@ MusicState = {
 	Sound : 'Effects',
 	Music : 'Music'
 }
+IdleAnimationState = {
+	Stopped : 'Stopped',
+	Running : 'Running',
+	Stopping : 'Stopping'
+}
 
 //scene and graphics 
 var canvasID = "myCanvas";
@@ -72,11 +77,19 @@ var linesPerLevel = 10;
 var startLevel = 1;
 
 //animation
+var timeSinceAnimationStarted = 0;//shared across all animations
 var lineAnimDurration = 1000;
 var lineAnimFlickerCount = 2;
 var newGameAnimDurration = 1000;
 var gameOverAnimDurration = 1000;
-var timeSinceAnimationStarted = 0;
+var idleAnimationState = IdleAnimationState.Stopped;
+var idleDropRate = 150;
+var idleStoppingDropRate = 50;
+var idleSpawnRate = 1000;
+var idleTimeSinceDrop = 0;
+var idleTimeSinceSpawn = 0;
+var idlePieces = [];
+var idlePiecePos = [];
 
 //game variables
 var blockSize = 26;
@@ -86,7 +99,7 @@ var boardPos = new Point(50,100);
 var boardSlots = Create2DArray(boardWidth);
 clearBoard();
 var linesToClear = [];
-var pieceSettledCount = 0;//number of ticks the active pice has settled
+var pieceSettledCount = 0;//number of ticks the active piece has settled
 
 //piece & nextPiece
 var nextPieceSlotType = BoardSlot.Block7;
@@ -148,18 +161,23 @@ function gameBootstrap()
 	tick();
 	rootTimerObject = setInterval(function(){tick();}, tickDelay);
 	
-	runNewGameAnimation();
-	//runIdleAnimation();
+	gameState = GameState.Menu;
+	runIdleAnimation();
 }
 
 function runIdleAnimation()
 {
-	gameState = GameState.IdleAnimation;
-	timeSinceAnimationStarted=0;
+	idleAnimationState = IdleAnimationState.Running;
+}
+
+function stopIdleAnimation()
+{
+	idleAnimationState = IdleAnimationState.Stopping;
 }
 
 function runNewGameAnimation()
 {
+	stopIdleAnimation();
 	gameState = GameState.NewGameAnimation;
 	gamePaused = false;
 	timeSinceAnimationStarted=0;
@@ -596,8 +614,16 @@ function toggleMusicPause()
 
 function playLineClearSound(lines)
 {
-	if(musicState!=MusicState.Mute)
-		lineClearSound.play();
+	if(lines>=4)
+	{
+		if(musicState!=MusicState.Mute)
+			tetrisSound.play();
+	}
+	else
+	{
+		if(musicState!=MusicState.Mute)
+			lineClearSound.play();
+	}
 }
 
 function playPieceSnapSound()
@@ -610,12 +636,6 @@ function playLevelUpSound()
 {
 	//if(musicState!=MusicState.Mute)
 		//levelUpSound.play();
-}
-
-function playTetrisSound()
-{
-	//if(musicState!=MusicState.Mute)
-		//tetrisSound.play();
 }
 
 function scoreLinesClear(lines)
@@ -755,6 +775,7 @@ function runGameOverAnimation()
 function stopGameOverAnimation()
 {
 	gameState=GameState.GameOver;
+	runIdleAnimation();
 }
 
 function runClearLineAnimation()
@@ -901,6 +922,7 @@ function drawInfo(context)
 		context.fillText("Sound:"+musicState,               xPos,yPos+ySeperation*line++);
 		context.fillText("Keys:"+keysPressed,               xPos,yPos+ySeperation*line++);
 		context.fillText("Input:"+gameInput,                xPos,yPos+ySeperation*line++);
+		context.fillText("Idle:"+idleAnimationState,        xPos,yPos+ySeperation*line++);
 	}
 }
 
@@ -925,6 +947,11 @@ function draw(time)
 	context.rect (boardPos.X,boardPos.Y,boardWidth*blockSize,boardHeight*blockSize);
 	context.stroke();
 	//context.drawImage(backgroundImage, boardPos.X,boardPos.Y);
+	
+	if(idleAnimationState!=IdleAnimationState.Stopped)//this block is kept seperate because the idle animation can run behind the others
+	{
+		drawIdleAnimation(time);
+	}
 	
 	if(gameState==GameState.NewGameAnimation)
 	{
@@ -985,6 +1012,42 @@ function draw(time)
 	}
 	
 	drawInfo(context);
+}
+
+function drawIdleAnimation(time)
+{
+	//spawn
+	if(idleAnimationState==IdleAnimationState.Running)
+	{
+		idleTimeSinceSpawn+=time;
+		if(idleTimeSinceSpawn>=idleSpawnRate)
+		{
+			idleTimeSinceSpawn = 0;
+			//do stuff
+			console.log("Idle - Spawn-");
+		}
+	}
+	//drop
+	if(idleAnimationState==IdleAnimationState.Running || idleAnimationState==IdleAnimationState.Stopping)
+	{
+		var dropRate = idleDropRate;
+		if(idleAnimationState==IdleAnimationState.Stopping)
+			dropRate = idleStoppingDropRate;
+		idleTimeSinceDrop+=time;
+		if(idleTimeSinceDrop>=idleDropRate)
+		{
+			idleTimeSinceDrop = 0;
+			//do stuff
+			//console.log("Idle - drop");
+		}
+	}
+	//check if clear
+	if(idleAnimationState==IdleAnimationState.Stopping)
+	{
+		//check to stop
+		//if(spawned==0)
+			idleAnimationState = IdleAnimationState.Stopped;
+	}
 }
 
 function drawBigCenterString(size, text, context)
