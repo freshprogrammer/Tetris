@@ -1,5 +1,6 @@
 GameState = {
     Menu : 'Menu',
+    IdleAnimation : 'IdleAnimation',
     Playing : 'Playing',
     LineAnimating : 'LineAnimating',
     NewGameAnimation : 'NewGameAnimation',
@@ -34,8 +35,12 @@ var gameWidth;
 var gameHeight;
 var showDebugInfo = true;
 
-var backgroundMusic;
 var musicState = MusicState.Music;
+var backgroundMusic;
+var pieceSnapSound;
+var lineClearSound;
+//var levelUpSound;
+//var tetrisSound;
 
 //fps tracking
 var fpsInterval = 1000;
@@ -144,11 +149,19 @@ function gameBootstrap()
 	rootTimerObject = setInterval(function(){tick();}, tickDelay);
 	
 	runNewGameAnimation();
+	//runIdleAnimation();
+}
+
+function runIdleAnimation()
+{
+	gameState = GameState.IdleAnimation;
+	timeSinceAnimationStarted=0;
 }
 
 function runNewGameAnimation()
 {
 	gameState = GameState.NewGameAnimation;
+	gamePaused = false;
 	timeSinceAnimationStarted=0;
 }
 
@@ -172,6 +185,16 @@ function loadAssets()
 	block6Image.src = 'assets/pics/block6.jpg';
 	block7Image = new Image();
 	block7Image.src = 'assets/pics/block7.jpg';
+	
+	//sounds
+	backgroundMusic = new Audio('assets/audio/tetrisMusic.mp3');
+	backgroundMusic.loop = true;
+	backgroundMusic.volume = 0.1;
+	pieceSnapSound = new Audio('assets/audio/drop.wav');
+	pieceSnapSound.volume = 0.1;
+	lineClearSound = new Audio('assets/audio/moneySound.wav');
+	//levelUpSound = new Audio('assets/audio/drop.wav');
+	//tetrisSound = new Audio('assets/audio/drop.wav');
 }
 
 function mouseMove(event)
@@ -554,19 +577,7 @@ function scorePiecePlacement()
 function playBackgroundMusic()
 {
 	if(musicState==MusicState.Music)
-	{
-		if(backgroundMusic==null)
-		{
-			backgroundMusic = new Audio('assets/audio/tetrisMusic.mp3');
-			backgroundMusic.loop = true;
-			backgroundMusic.volume = 0.1;
-			backgroundMusic.play();
-		}
-		else
-		{
-			backgroundMusic.play();
-		}
-	}
+		backgroundMusic.play();
 }
 
 function toggleMusicPause()
@@ -586,29 +597,25 @@ function toggleMusicPause()
 function playLineClearSound(lines)
 {
 	if(musicState!=MusicState.Mute)
-	{
-		var audio = new Audio('assets/audio/moneySound.wav');
-		audio.play();
-	}
+		lineClearSound.play();
 }
 
 function playPieceSnapSound()
 {
 	if(musicState!=MusicState.Mute)
-	{
-		var audio = new Audio('assets/audio/drop.wav');
-		audio.volume = 0.1;
-		audio.play();
-	}
+		pieceSnapSound.play();
 }
 
 function playLevelUpSound()
 {
-	if(musicState!=MusicState.Mute)
-	{
-		//var audio = new Audio('assets/audio/drop.wav');
-		//audio.play();
-	}
+	//if(musicState!=MusicState.Mute)
+		//levelUpSound.play();
+}
+
+function playTetrisSound()
+{
+	//if(musicState!=MusicState.Mute)
+		//tetrisSound.play();
 }
 
 function scoreLinesClear(lines)
@@ -962,7 +969,7 @@ function draw(time)
 		if(gameState==GameState.GameOver)
 			drawBigCenterString(45,"Game Over", context);
 	}
-	else
+	else if(gameState==GameState.Playing || gameState==GameState.LineAnimating)
 	{
 		drawBoard(context);
 		
