@@ -237,6 +237,8 @@ function processInput(time)
 			currentGameInput.RotLeftPressed = true;
 		else if(keysPressed[index]==32)//space
 			currentGameInput.DropPressed = true;
+		else if(keysPressed[index]==113)//F2
+			currentGameInput.NewGamePressed = true;
 	}
 	
 	if(currentGameInput.DownPressed)   gameInput.DownUnHandled = true;
@@ -247,8 +249,17 @@ function processInput(time)
 	if(currentGameInput.RotLeftPressed && !gameInput.RotLeftPressed) gameInput.RotLeftUnHandled = true;
 	if(currentGameInput.RotRightPressed && !gameInput.RotRightPressed) gameInput.RotRightUnHandled = true;
 	if(currentGameInput.DropPressed && !gameInput.DropPressed) gameInput.DropUnHandled = true;
+	if(currentGameInput.NewGamePressed && !gameInput.NewGamePressed) newGamePressed();
 	
 	gameInput.updatePressed(currentGameInput);
+}
+
+function newGamePressed()
+{
+	resetScore();
+    backgroundMusic.pause();
+    backgroundMusic.currentTime = 0;
+	runNewGameAnimation();
 }
 
 function gamePause()
@@ -525,6 +536,8 @@ function toggleSound()
 
 function resetScore()
 {
+	stopwatch.stop();
+	stopwatch.reset();
 	score = 0;
 	level = startLevel;
 	updateDropTimeForLevel();
@@ -864,11 +877,12 @@ function drawInfo(context)
 	line++;
 	line++;
 	context.fillText("Controls:",                       xPos,yPos+ySeperation*line++);
-	context.fillText("   Move: Arrows",                     xPos,yPos+ySeperation*line++);
-	context.fillText("   Rotate: Z, X",                     xPos,yPos+ySeperation*line++);
-	context.fillText("   Drop: Space",                      xPos,yPos+ySeperation*line++);
-	context.fillText("   Mute: M",                          xPos,yPos+ySeperation*line++);
-	context.fillText("   Pause: Esc",                       xPos,yPos+ySeperation*line++);
+	context.fillText("   New Game: F2",                 xPos,yPos+ySeperation*line++);
+	context.fillText("   Move: Arrows",                 xPos,yPos+ySeperation*line++);
+	context.fillText("   Rotate: Z, X",                 xPos,yPos+ySeperation*line++);
+	context.fillText("   Drop: Space",                  xPos,yPos+ySeperation*line++);
+	context.fillText("   Mute: M",                      xPos,yPos+ySeperation*line++);
+	context.fillText("   Pause: Esc",                   xPos,yPos+ySeperation*line++);
 	
 	if(showDebugInfo)
 	{

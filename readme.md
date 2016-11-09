@@ -7,6 +7,7 @@
 - Complete lines to gain points and raise the level
 
 ### Controls
+- F2 Start New Game
 - arrow keys to move
 - Z & X to rotate
 - Esc to pause 
