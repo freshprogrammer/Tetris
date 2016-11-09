@@ -892,7 +892,7 @@ function drawFPS(context)
 	context.fillText("Input:"+gameInput,                xPos,yPos+ySeperation*line++);
 	
 	
-	var xPos = 475;
+	xPos = boardPos.X + boardWidth*blockSize+xPos+5;
 	line = 0;
 	context.fillText("Controls:",    xPos,yPos+ySeperation*line++);
 	context.fillText("Move:Arrows",  xPos,yPos+ySeperation*line++);
@@ -920,7 +920,16 @@ function draw(time)
 	
 	//render game
 	//background
-	context.drawImage(backgroundImage, boardPos.X,boardPos.Y);
+	context.shadowColor="black";
+	context.shadowBlur=20;
+	context.fillStyle="lightgray";
+	context.fillRect (boardPos.X,boardPos.Y,boardWidth*blockSize,boardHeight*blockSize);
+	context.shadowBlur=0;
+	context.beginPath();
+	context.strokeStyle="black";
+	context.rect (boardPos.X,boardPos.Y,boardWidth*blockSize,boardHeight*blockSize);
+	context.stroke();
+	//context.drawImage(backgroundImage, boardPos.X,boardPos.Y);
 	
 	if(gameState==GameState.NewGameAnimation)
 	{
@@ -963,18 +972,7 @@ function draw(time)
 			}
 		}
 		if(gameState==GameState.GameOver)
-		{
-			var size = 45;
-			var loc = new Point(boardPos.X,boardPos.Y+boardHeight*blockSize/2+size/2)
-			context.font=size+"px verdana";
-			context.shadowColor="black";
-			context.shadowBlur=7;
-			context.lineWidth=5;
-			context.strokeText("Game Over",loc.X,loc.Y);
-			context.shadowBlur=0;
-			context.fillStyle="white";
-			context.fillText("Game Over",loc.X,loc.Y);
-		}
+			drawBigCenterString(45,"Game Over", context);
 	}
 	else
 	{
@@ -988,19 +986,24 @@ function draw(time)
 		}
 		
 		if(gamePaused)
-		{
-			var size = 72;
-			var loc = new Point(boardPos.X,boardPos.Y+boardHeight*blockSize/2+size/2)
-			context.font=size+"px verdana";
-			context.shadowColor="black";
-			context.shadowBlur=7;
-			context.lineWidth=5;
-			context.strokeText("Paused",loc.X,loc.Y);
-			context.shadowBlur=0;
-			context.fillStyle="white";
-			context.fillText("Paused",loc.X,loc.Y);
-		}
+			drawBigCenterString(72,"Paused", context);
 	}
+}
+
+function drawBigCenterString(size, text, context)
+{
+	var loc = new Point(boardPos.X,boardPos.Y+boardHeight*blockSize/2+size/2)
+	context.save();
+	context.font=size+"px verdana";
+	context.shadowColor="black";
+	context.strokeStyle="black";
+	context.shadowBlur=7;
+	context.lineWidth=5;
+	context.strokeText(text,loc.X,loc.Y);
+	context.shadowBlur=0;
+	context.fillStyle="white";
+	context.fillText(text,loc.X,loc.Y);
+	context.restore();
 }
 
 function drawActivePiece(context)
