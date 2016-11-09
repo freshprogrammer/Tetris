@@ -681,7 +681,7 @@ function getNextBlockPiece()
 function spawnNewPiece()
 {
 	pieceSlotType = getNextBlockPiece();
-	pieceSlot = new Point(3,0);
+	pieceSlot = new Point(Math.ceil(boardWidth/2)-2,0);
 	pieceBlocks = getBlocksForPiece(pieceSlotType);
 	
 	//tweak blocks to center and up as necisarry
@@ -1006,7 +1006,8 @@ function draw(time)
 
 function drawBigCenterString(size, text, context)
 {
-	var loc = new Point(boardPos.X,boardPos.Y+boardHeight*blockSize/2+size/2)
+	//based on center of 10x20 grid so offset if different
+	var loc = new Point(boardPos.X + ((boardWidth-10)*blockSize)/2,boardPos.Y+boardHeight*blockSize/2+size/2)
 	context.save();
 	context.font=size+"px verdana";
 	context.shadowColor="black";
@@ -1033,7 +1034,7 @@ function drawNextPiece(context)
 {
 	for(var i=0; i<4; i++)
 	{
-		var renderPreviewSlot = new Point(11,4);
+		var renderPreviewSlot = new Point(boardWidth+1,4);
 		var pos = getSlotPos(renderPreviewSlot.X+nextPieceBlocks[i].X,renderPreviewSlot.Y+nextPieceBlocks[i].Y);
 		context.drawImage(getBlockImage(nextPieceSlotType), pos.X,pos.Y, blockSize,blockSize);
 	}
