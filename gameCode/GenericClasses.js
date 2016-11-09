@@ -56,6 +56,7 @@ GameInput.prototype.clearKeys=function()
 	this.RotLeftPressed = false;
 	this.RotRightPressed = false;
 	this.DropPressed = false;
+	this.NewGamePressed = false;
 	
 	this.DownUnHandled = false;
 	this.LeftUnHandled = false;
@@ -65,6 +66,7 @@ GameInput.prototype.clearKeys=function()
 	this.RotLeftUnHandled = false;
 	this.RotRightUnHandled = false;
 	this.DropUnHandled = false;
+	this.NewGameUnHandled = false;
 };
 GameInput.prototype.handledInput=function()
 {
@@ -76,6 +78,7 @@ GameInput.prototype.handledInput=function()
 	this.RotLeftUnHandled = false;
 	this.RotRightUnHandled = false;
 	this.DropUnHandled = false;
+	this.NewGameUnHandled = false;
 };
 GameInput.prototype.updatePressed=function(otherInput)
 {
@@ -87,6 +90,7 @@ GameInput.prototype.updatePressed=function(otherInput)
 	this.RotLeftPressed = otherInput.RotLeftPressed;
 	this.RotRightPressed = otherInput.RotRightPressed;
 	this.DropPressed = otherInput.DropPressed;
+	this.NewGamePressed = otherInput.NewGamePressed;;
 };
 GameInput.prototype.toString=function()
 {
@@ -99,6 +103,7 @@ GameInput.prototype.toString=function()
 	if(this.RotLeftPressed)result+="RotL,";
 	if(this.RotRightPressed)result+="RotR,";
 	if(this.DropPressed)result+="Drop,";
+	if(this.NewGamePressed)result+="NwGm,";
 	
 	return result;
 };
@@ -159,7 +164,10 @@ var	Stopwatch = function()
 		s = Math.floor( time / 1000 );
 		ms = time % 1000;
 
-		newTime = pad(h, 2) + ':' + pad(m, 2) + ':' + pad(s, 2) + ':' + pad(ms, 3);
+		//newTime = pad(h, 2) + ':' + pad(m, 2) + ':' + pad(s, 2) + ':' + pad(ms, 3);
+		
+		m += h*60;
+		newTime = pad(m, 2) + ':' + pad(s, 2);
 		return newTime;
 	}
 };

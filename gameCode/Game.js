@@ -1,5 +1,6 @@
 GameState = {
     Menu : 'Menu',
+    IdleAnimation : 'IdleAnimation',
     Playing : 'Playing',
     LineAnimating : 'LineAnimating',
     NewGameAnimation : 'NewGameAnimation',
@@ -22,6 +23,11 @@ MusicState = {
 	Sound : 'Effects',
 	Music : 'Music'
 }
+IdleAnimationState = {
+	Stopped : 'Stopped',
+	Running : 'Running',
+	Stopping : 'Stopping'
+}
 
 //scene and graphics 
 var canvasID = "myCanvas";
@@ -32,9 +38,14 @@ var tickDelay = 4;
 var lastTickTime = 0;
 var gameWidth;
 var gameHeight;
+var showDebugInfo = true;
 
-var backgroundMusic;
 var musicState = MusicState.Music;
+var backgroundMusic;
+var pieceSnapSound;
+var lineClearSound;
+//var levelUpSound;
+//var tetrisSound;
 
 //fps tracking
 var fpsInterval = 1000;
@@ -55,31 +66,43 @@ var demoRight = true;
 //tetris game system and timing
 var gameState = GameState.Menu;
 var gamePaused = false;
-var minPieceDropTime = 75;
+var minPieceDropTime = 65;
 var maxPieceDropTime = 1000;
 var pieceDropTime = maxPieceDropTime;
 var timeSinceLastStep = 0;
 var inputMoveTime = minPieceDropTime;
 var timeSinceLastInput = 0;
-var highestDificultyLevel = 10;
+var highestDificultyLevel = 20;
 var linesPerLevel = 10;
+var startLevel = 1;
 
 //animation
+var timeSinceAnimationStarted = 0;//shared across all animations
 var lineAnimDurration = 1000;
 var lineAnimFlickerCount = 2;
 var newGameAnimDurration = 1000;
 var gameOverAnimDurration = 1000;
-var timeSinceAnimationStarted = 0;
+var idleAnimationState = IdleAnimationState.Stopped;
+var idleDropRate = 65;
+var idleStoppingDropRate = 0;
+var idleSpawnRate = 500;
+var idleRotateRate = 1000;
+var idleTimeSinceDrop = 0;
+var idleTimeSinceSpawn = 0;
+var idleTimeSinceRotate = 0;
+var idlePieces = [];
+var idlePieceBlocks = [];
+var idlePiecePos = [];
 
 //game variables
 var blockSize = 26;
 var boardWidth = 10;
 var boardHeight = 20;
-var boardPos = new Point(200,100);
+var boardPos = new Point(50,100);
 var boardSlots = Create2DArray(boardWidth);
 clearBoard();
 var linesToClear = [];
-var pieceSettledCount = 0;//number of ticks the active pice has settled
+var pieceSettledCount = 0;//number of ticks the active piece has settled
 
 //piece & nextPiece
 var nextPieceSlotType = BoardSlot.Block7;
@@ -141,12 +164,25 @@ function gameBootstrap()
 	tick();
 	rootTimerObject = setInterval(function(){tick();}, tickDelay);
 	
-	runNewGameAnimation();
+	gameState = GameState.Menu;
+	runIdleAnimation();
+}
+
+function runIdleAnimation()
+{
+	idleAnimationState = IdleAnimationState.Running;
+}
+
+function stopIdleAnimation()
+{
+	idleAnimationState = IdleAnimationState.Stopping;
 }
 
 function runNewGameAnimation()
 {
+	stopIdleAnimation();
 	gameState = GameState.NewGameAnimation;
+	gamePaused = false;
 	timeSinceAnimationStarted=0;
 }
 
@@ -170,6 +206,16 @@ function loadAssets()
 	block6Image.src = 'assets/pics/block6.jpg';
 	block7Image = new Image();
 	block7Image.src = 'assets/pics/block7.jpg';
+	
+	//sounds
+	backgroundMusic = new Audio('assets/audio/tetrisMusic.mp3');
+	backgroundMusic.loop = true;
+	backgroundMusic.volume = 0.1;
+	pieceSnapSound = new Audio('assets/audio/drop.wav');
+	pieceSnapSound.volume = 0.1;
+	lineClearSound = new Audio('assets/audio/moneySound.wav');
+	//levelUpSound = new Audio('assets/audio/drop.wav');
+	//tetrisSound = new Audio('assets/audio/drop.wav');
 }
 
 function mouseMove(event)
@@ -235,6 +281,8 @@ function processInput(time)
 			currentGameInput.RotLeftPressed = true;
 		else if(keysPressed[index]==32)//space
 			currentGameInput.DropPressed = true;
+		else if(keysPressed[index]==113)//F2
+			currentGameInput.NewGamePressed = true;
 	}
 	
 	if(currentGameInput.DownPressed)   gameInput.DownUnHandled = true;
@@ -245,8 +293,17 @@ function processInput(time)
 	if(currentGameInput.RotLeftPressed && !gameInput.RotLeftPressed) gameInput.RotLeftUnHandled = true;
 	if(currentGameInput.RotRightPressed && !gameInput.RotRightPressed) gameInput.RotRightUnHandled = true;
 	if(currentGameInput.DropPressed && !gameInput.DropPressed) gameInput.DropUnHandled = true;
+	if(currentGameInput.NewGamePressed && !gameInput.NewGamePressed) newGamePressed();
 	
 	gameInput.updatePressed(currentGameInput);
+}
+
+function newGamePressed()
+{
+	resetScore();
+    backgroundMusic.pause();
+    backgroundMusic.currentTime = 0;
+	runNewGameAnimation();
 }
 
 function gamePause()
@@ -281,43 +338,6 @@ function gameStart()
 function gameStop()
 {
     clearInterval(rootTimerObject);
-}
-
-function renderDemo(context)
-{
-	if(demoRight)
-		demoX++;
-	else	
-		demoX--;
-		
-	if(demoX == gameWidth)
-		demoRight = false;
-	else if(demoX == 1)
-		demoRight = true;
-	
-	if(demoRight)
-		demoX++;
-	else	
-		demoX--;
-		
-	if(demoX == gameWidth)
-		demoRight = false;
-	else if(demoX == 1)
-		demoRight = true;
-
-	var gWidth=50;
-	// Create gradient
-	var grd = context.createLinearGradient(demoX+gameWidth/2,0,demoX+gWidth/2,demoX);
-	grd.addColorStop(0,"cyan");
-	grd.addColorStop(1,"red");
-
-	// Fill with gradient
-	context.fillStyle = grd;
-	context.fillRect(0,0,gameWidth,gameHeight);
-	
-	context.font = '40pt Calibri';
-	context.fillStyle = 'black';
-	context.fillText("Gradient X:"+demoX,demoX,90);
 }
 
 function tick()
@@ -449,10 +469,25 @@ function rotatePiece(clockwise)
 	}
 }
 
+function rotatePieceSimple(blocks)
+{
+	var rotateArea = 2;//all blocks - f different size pieces
+	//this is clockwise only for simplicity
+	for(var i=0; i<4; i++)
+	{
+		var x = rotateArea-blocks[i].Y;
+		var y = blocks[i].X;
+		blocks[i].X = x;
+		blocks[i].Y = y;
+	}
+	return blocks;
+}
+
 function dropPiece()
 {
 	while(movePiece(0,1));
 	snapPiece();
+	timeSinceLastStep = 0;
 }
 
 function lockInPiece()
@@ -540,7 +575,7 @@ function clearLine(clearY)
 
 function toggleSound()
 {
-	if(gamePaused)
+	if(gamePaused || gameState==GameState.GameOver || gameState==GameState.GameOverAnimation)
 		return;
 	
 	if(musicState==MusicState.Mute)musicState = MusicState.Music;
@@ -559,8 +594,11 @@ function toggleSound()
 
 function resetScore()
 {
+	stopwatch.stop();
+	stopwatch.reset();
 	score = 0;
-	level = 1;
+	level = startLevel;
+	updateDropTimeForLevel();
 	totalLinesCleared = 0;
 	scoredTetrisLast = false;
 	tetrises = 0;
@@ -574,19 +612,7 @@ function scorePiecePlacement()
 function playBackgroundMusic()
 {
 	if(musicState==MusicState.Music)
-	{
-		if(backgroundMusic==null)
-		{
-			backgroundMusic = new Audio('assets/audio/tetrisMusic.mp3');
-			backgroundMusic.loop = true;
-			backgroundMusic.volume = 0.1;
-			backgroundMusic.play();
-		}
-		else
-		{
-			backgroundMusic.play();
-		}
-	}
+		backgroundMusic.play();
 }
 
 function toggleMusicPause()
@@ -605,30 +631,29 @@ function toggleMusicPause()
 
 function playLineClearSound(lines)
 {
-	if(musicState!=MusicState.Mute)
+	if(lines>=4)
 	{
-		var audio = new Audio('assets/audio/moneySound.wav');
-		audio.play();
+		if(musicState!=MusicState.Mute)
+		//	tetrisSound.play();
+			lineClearSound.play();
+	}
+	else
+	{
+		if(musicState!=MusicState.Mute)
+			lineClearSound.play();
 	}
 }
 
 function playPieceSnapSound()
 {
 	if(musicState!=MusicState.Mute)
-	{
-		var audio = new Audio('assets/audio/drop.wav');
-		audio.volume = 0.1;
-		audio.play();
-	}
+		pieceSnapSound.play();
 }
 
 function playLevelUpSound()
 {
-	if(musicState!=MusicState.Mute)
-	{
-		//var audio = new Audio('assets/audio/drop.wav');
-		//audio.play();
-	}
+	//if(musicState!=MusicState.Mute)
+		//levelUpSound.play();
 }
 
 function scoreLinesClear(lines)
@@ -649,8 +674,19 @@ function scoreLinesClear(lines)
 	//level up
 	var oldLevel = level;
 	level = Math.floor(totalLinesCleared/linesPerLevel)+1;
+	if(level > highestDificultyLevel)
+		level = highestDificultyLevel;
+	if(level < oldLevel)
+		level = oldLevel;//for start level
 	if(level>oldLevel)
+	{
 		playLevelUpSound();
+		updateDropTimeForLevel();
+	}
+}
+
+function updateDropTimeForLevel()
+{
 	pieceDropTime = maxPieceDropTime - ((maxPieceDropTime - minPieceDropTime)/(highestDificultyLevel-1)) * (level-1);
 	if(pieceDropTime<minPieceDropTime)
 		pieceDropTime = minPieceDropTime;
@@ -667,7 +703,7 @@ function getNextBlockPiece()
 function spawnNewPiece()
 {
 	pieceSlotType = getNextBlockPiece();
-	pieceSlot = new Point(3,0);
+	pieceSlot = new Point(Math.ceil(boardWidth/2)-2,0);
 	pieceBlocks = getBlocksForPiece(pieceSlotType);
 	
 	//tweak blocks to center and up as necisarry
@@ -757,6 +793,7 @@ function runGameOverAnimation()
 function stopGameOverAnimation()
 {
 	gameState=GameState.GameOver;
+	runIdleAnimation();
 }
 
 function runClearLineAnimation()
@@ -869,37 +906,43 @@ function update(time)
 	}
 }
 
-function drawFPS(context)
+function drawInfo(context)
 {
-	var xPos = 5;
-	var yPos = 25;
+	var xPos = boardPos.X + boardWidth * blockSize + 15;
+	var yPos = boardPos.Y + 25;
 	var ySeperation = 25;
 	context.font = '20pt Calibri';
 	context.fillStyle = 'black';
 
 	var line = 0;
-	context.fillText("Time:"+stopwatch.formattedTime(), xPos,yPos+ySeperation*line++);
 	context.fillText("Score:"+score,                    xPos,yPos+ySeperation*line++);
 	context.fillText("Level:"+level,                    xPos,yPos+ySeperation*line++);
 	context.fillText("Lines:"+totalLinesCleared,        xPos,yPos+ySeperation*line++);
 	context.fillText("Tetris:"+tetrises,                xPos,yPos+ySeperation*line++);
-	line++;                                             
-	//context.fillText("FPS:"+lastIntervalFPS+" - "+framesThisInterval,xPos,yPos+ySeperation*line++);
-	context.fillText("FPS:"+lastIntervalFPS,            xPos,yPos+ySeperation*line++);
-	context.fillText("State:"+gameState,                xPos,yPos+ySeperation*line++);
-	context.fillText("Sound:"+musicState,               xPos,yPos+ySeperation*line++);
-	context.fillText("Keys:"+keysPressed,               xPos,yPos+ySeperation*line++);
-	context.fillText("Input:"+gameInput,                xPos,yPos+ySeperation*line++);
+	context.fillText("Time:"+stopwatch.formattedTime(), xPos,yPos+ySeperation*line++);
+	line++;
+	line++;
+	context.fillText("Controls:",                       xPos,yPos+ySeperation*line++);
+	context.fillText("   New Game: F2",                 xPos,yPos+ySeperation*line++);
+	context.fillText("   Move: Arrows",                 xPos,yPos+ySeperation*line++);
+	context.fillText("   Rotate: Z, X",                 xPos,yPos+ySeperation*line++);
+	context.fillText("   Drop: Space",                  xPos,yPos+ySeperation*line++);
+	context.fillText("   Mute: M",                      xPos,yPos+ySeperation*line++);
+	context.fillText("   Pause: Esc",                   xPos,yPos+ySeperation*line++);
 	
-	
-	var xPos = 475;
-	line = 0;
-	context.fillText("Controls:",    xPos,yPos+ySeperation*line++);
-	context.fillText("Move:Arrows",  xPos,yPos+ySeperation*line++);
-	context.fillText("Rotate:Z, X",  xPos,yPos+ySeperation*line++);
-	context.fillText("Drop:Space",   xPos,yPos+ySeperation*line++);
-	context.fillText("Mute:M",       xPos,yPos+ySeperation*line++);
-	context.fillText("Pause:Esc",    xPos,yPos+ySeperation*line++);
+	if(showDebugInfo)
+	{
+		line++;
+		line++;
+		context.fillText("FPS:"+lastIntervalFPS,            xPos,yPos+ySeperation*line++);
+		//context.fillText("FPS:"+lastIntervalFPS+" - "+framesThisInterval,xPos,yPos+ySeperation*line++);
+		context.fillText("State:"+gameState,                xPos,yPos+ySeperation*line++);
+		context.fillText("Sound:"+musicState,               xPos,yPos+ySeperation*line++);
+		context.fillText("Keys:"+keysPressed,               xPos,yPos+ySeperation*line++);
+		context.fillText("Input:"+gameInput,                xPos,yPos+ySeperation*line++);
+		context.fillText("Idle:"+idleAnimationState,        xPos,yPos+ySeperation*line++);
+		context.fillText("  idles:"+idlePieces.length,      xPos,yPos+ySeperation*line++);
+	}
 }
 
 function draw(time)
@@ -907,20 +950,28 @@ function draw(time)
 	var context = canvas.getContext("2d");
 	context.clearRect (0,0,gameWidth,gameHeight);
 
-	// Create gradient
-	var grd = context.createLinearGradient(0,0,0,gameHeight);
-	grd.addColorStop(0,"white");
-	grd.addColorStop(1,"black");
-
-	// Fill with gradient
-	context.fillStyle = grd;
+	
+	//canvas background
+	context.fillStyle = "rgb(112, 146, 190)";
 	context.fillRect(0,0,gameWidth,gameHeight);
-	//renderDemo(context);
-	drawFPS(context);
+	
+	if(idleAnimationState!=IdleAnimationState.Stopped)//this block is kept seperate because the idle animation can run behind the others
+	{
+		drawIdleAnimation(time,context);
+	}
 	
 	//render game
 	//background
-	context.drawImage(backgroundImage, boardPos.X,boardPos.Y);
+	context.shadowColor="black";
+	context.shadowBlur=20;
+	context.fillStyle="lightgray";
+	context.fillRect (boardPos.X,boardPos.Y,boardWidth*blockSize,boardHeight*blockSize);
+	context.shadowBlur=0;
+	context.beginPath();
+	context.strokeStyle="black";
+	context.rect (boardPos.X,boardPos.Y,boardWidth*blockSize,boardHeight*blockSize);
+	context.stroke();
+	//context.drawImage(backgroundImage, boardPos.X,boardPos.Y);
 	
 	if(gameState==GameState.NewGameAnimation)
 	{
@@ -940,7 +991,7 @@ function draw(time)
 					img = getBlockImage(BoardSlot.Block0);
 				
 				if(img!=null)
-					context.drawImage(img, blockPos.X,blockPos.Y);
+					context.drawImage(img, blockPos.X,blockPos.Y, blockSize, blockSize);
 			}
 		}
 	}
@@ -959,24 +1010,13 @@ function draw(time)
 					boardSlots[x][y] = BoardSlot.Block0;
 				var img = getBlockImage(boardSlots[x][y]);
 				if(img!=null)
-					context.drawImage(getBlockImage(boardSlots[x][y]), blockPos.X,blockPos.Y);
+					context.drawImage(getBlockImage(boardSlots[x][y]), blockPos.X,blockPos.Y, blockSize, blockSize);
 			}
 		}
 		if(gameState==GameState.GameOver)
-		{
-			var size = 45;
-			var loc = new Point(boardPos.X,boardPos.Y+boardHeight*blockSize/2+size/2)
-			context.font=size+"px verdana";
-			context.shadowColor="black";
-			context.shadowBlur=7;
-			context.lineWidth=5;
-			context.strokeText("Game Over",loc.X,loc.Y);
-			context.shadowBlur=0;
-			context.fillStyle="white";
-			context.fillText("Game Over",loc.X,loc.Y);
-		}
+			drawBigCenterString(45,"Game Over", context);
 	}
-	else
+	else if(gameState==GameState.Playing || gameState==GameState.LineAnimating)
 	{
 		drawBoard(context);
 		
@@ -988,19 +1028,105 @@ function draw(time)
 		}
 		
 		if(gamePaused)
+			drawBigCenterString(72,"Paused", context);
+	}
+	
+	drawInfo(context);
+}
+
+function drawIdleAnimation(time, context)
+{
+	var dropSpeed = 5;
+	//spawn
+	if(idleAnimationState==IdleAnimationState.Running)
+	{
+		idleTimeSinceSpawn+=time;
+		if(idleTimeSinceSpawn>=idleSpawnRate)
 		{
-			var size = 72;
-			var loc = new Point(boardPos.X,boardPos.Y+boardHeight*blockSize/2+size/2)
-			context.font=size+"px verdana";
-			context.shadowColor="black";
-			context.shadowBlur=7;
-			context.lineWidth=5;
-			context.strokeText("Paused",loc.X,loc.Y);
-			context.shadowBlur=0;
-			context.fillStyle="white";
-			context.fillText("Paused",loc.X,loc.Y);
+			idleTimeSinceSpawn = 0;
+			//spawn random background piece
+			var x = Math.floor(Math.random()*gameWidth+blockSize*4)-blockSize*2
+			var rndType = Math.floor(Math.random()*7)+1;
+			var blocks = getBlocksForPiece(rndType);
+			
+			var turns = Math.floor(Math.random()*4);
+			for (i = 0; i < turns; i++)
+			{
+				blocks = rotatePieceSimple(blocks);
+			}
+			
+			idlePieces.push(rndType);
+			idlePieceBlocks.push(blocks);
+			idlePiecePos.push(new Point(x,-blockSize*2));
 		}
 	}
+	//drop
+	var dropRate = idleDropRate;
+	if(idleAnimationState==IdleAnimationState.Stopping)
+		dropRate = idleStoppingDropRate;
+	idleTimeSinceDrop+=time;
+	if(idleTimeSinceDrop>=dropRate)
+	{
+		idleTimeSinceDrop = 0;
+		//do stuff
+		var minY = gameHeight;
+		for (i = 0; i < idlePieces.length; i++)
+		{
+			idlePiecePos[i].Y += dropSpeed;
+			if(idlePiecePos[i].Y > gameHeight+blockSize*2)
+			{
+				//trim this idle piece since its off the screen
+				idlePieces.splice(i,1);
+				idlePieceBlocks.splice(i,1);
+				idlePiecePos.splice(i,1);
+				i--;
+			}
+		}
+	}
+	//turn random piece
+	idleTimeSinceRotate+=time;
+	if(idleTimeSinceRotate>=idleRotateRate)
+	{
+		idleTimeSinceRotate = 0;
+		var i = Math.floor(Math.random()*idlePieces.length);
+		idlePieceBlocks[i] = rotatePieceSimple(idlePieceBlocks[i]);
+	}
+	//render
+	for (i = 0; i < idlePieces.length; i++)
+	{
+		for (k = 0; k < idlePieceBlocks[i].length; k++)
+		{
+			var x = idlePiecePos[i].X + idlePieceBlocks[i][k].X * blockSize;
+			var y = idlePiecePos[i].Y + idlePieceBlocks[i][k].Y * blockSize;
+			context.drawImage(getBlockImage(idlePieces[i]), x, y, blockSize, blockSize);
+		}
+	}
+	//check if clear
+	if(idleAnimationState==IdleAnimationState.Stopping)
+	{
+		//check to stop
+		if(idlePieces.length==0)
+		{
+			idleAnimationState = IdleAnimationState.Stopped;
+		}
+	}
+}
+
+function drawBigCenterString(size, text, context)
+{
+	//based on center of 10x20 grid so offset if different
+	var loc = new Point(boardPos.X + ((boardWidth-10)*blockSize)/2,boardPos.Y+boardHeight*blockSize/2+size/2)
+	context.save();
+	context.font=size+"px verdana";
+	context.shadowColor="black";
+	context.strokeStyle="black";
+	context.shadowBlur=7;
+	context.lineWidth=5;
+	context.strokeText(text,loc.X,loc.Y);
+	context.shadowBlur=0;
+	context.fillStyle="white";
+	context.fillText(text,loc.X,loc.Y);
+	context.restore();
 }
 
 function drawActivePiece(context)
@@ -1008,17 +1134,27 @@ function drawActivePiece(context)
 	for(var i=0; i<4; i++)
 	{
 		var pos = getSlotPos(pieceSlot.X+pieceBlocks[i].X,pieceSlot.Y+pieceBlocks[i].Y);
-		context.drawImage(getBlockImage(pieceSlotType), pos.X,pos.Y);
+		context.drawImage(getBlockImage(pieceSlotType), pos.X,pos.Y, blockSize, blockSize);
 	}
 }
 
 function drawNextPiece(context)
 {
+	var xShift = 0;
+	var yShift = 0;
+	if(nextPieceSlotType==BoardSlot.Block5 || nextPieceSlotType==BoardSlot.Block6 || nextPieceSlotType==BoardSlot.Block7)
+	{//shfit z and square blocks down one
+		yShift=1;
+	}
+	if(nextPieceSlotType==BoardSlot.Block7)
+	{//shift square 1 to right
+		xShift=1;
+	}
 	for(var i=0; i<4; i++)
 	{
-		var renderPreviewSlot = new Point(11,4);
+		var renderPreviewSlot = new Point(3+xShift,-4+yShift);
 		var pos = getSlotPos(renderPreviewSlot.X+nextPieceBlocks[i].X,renderPreviewSlot.Y+nextPieceBlocks[i].Y);
-		context.drawImage(getBlockImage(nextPieceSlotType), pos.X,pos.Y);
+		context.drawImage(getBlockImage(nextPieceSlotType), pos.X,pos.Y, blockSize,blockSize);
 	}
 }
 
@@ -1031,7 +1167,7 @@ function drawBoard(context)
 			var blockPos = getSlotPos(x,y);
 			var img = getBlockImage(boardSlots[x][y]);
 			if(img!=null)
-				context.drawImage(getBlockImage(boardSlots[x][y]), blockPos.X,blockPos.Y);
+				context.drawImage(getBlockImage(boardSlots[x][y]), blockPos.X,blockPos.Y, blockSize, blockSize);
 		}
 	}
 }
