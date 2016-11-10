@@ -100,7 +100,7 @@ var idlePiecePos = [];
 var blockSize = 26;
 var boardWidth = 10;
 var boardHeight = 20;
-var boardPos = new Point(50,100);
+var boardPos = new Point(52,100);
 var boardSlots = Create2DArray(boardWidth);
 clearBoard();
 var linesToClear = [];
