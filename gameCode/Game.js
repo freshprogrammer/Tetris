@@ -82,6 +82,8 @@ var lineAnimDurration = 1000;
 var lineAnimFlickerCount = 2;
 var newGameAnimDurration = 1000;
 var gameOverAnimDurration = 1000;
+var idleDropSpeed = 5;
+var idleDropStartY = 0;//spawn Y offset of pieces - so all pieces move at y axis like they are on a moving grid
 var idleAnimationState = IdleAnimationState.Stopped;
 var idleDropRate = 65;
 var idleStoppingDropRate = 0;
@@ -98,7 +100,7 @@ var idlePiecePos = [];
 var blockSize = 26;
 var boardWidth = 10;
 var boardHeight = 20;
-var boardPos = new Point(50,100);
+var boardPos = new Point(52,100);
 var boardSlots = Create2DArray(boardWidth);
 clearBoard();
 var linesToClear = [];
@@ -344,6 +346,7 @@ function tick()
 {
 	var now = window.performance.now();
 	var timeDif = now-lastTickTime;
+	lastTickTime = window.performance.now();
 	
 	framesThisInterval++;
 	if(now-lastIntervalEndTime > fpsInterval)
@@ -357,8 +360,6 @@ function tick()
 	
 	update(timeDif);
 	draw(timeDif);
-	
-	lastTickTime = window.performance.now();
 }
 
 function clearBoard()
@@ -1036,7 +1037,6 @@ function draw(time)
 
 function drawIdleAnimation(time, context)
 {
-	var dropSpeed = 5;
 	//spawn
 	if(idleAnimationState==IdleAnimationState.Running)
 	{
@@ -1045,7 +1045,7 @@ function drawIdleAnimation(time, context)
 		{
 			idleTimeSinceSpawn = 0;
 			//spawn random background piece
-			var x = Math.floor(Math.random()*gameWidth+blockSize*4)-blockSize*2
+			var x = Math.floor(Math.random()*(gameWidth/blockSize))*blockSize-blockSize
 			var rndType = Math.floor(Math.random()*7)+1;
 			var blocks = getBlocksForPiece(rndType);
 			
@@ -1057,7 +1057,7 @@ function drawIdleAnimation(time, context)
 			
 			idlePieces.push(rndType);
 			idlePieceBlocks.push(blocks);
-			idlePiecePos.push(new Point(x,-blockSize*2));
+			idlePiecePos.push(new Point(x,-blockSize*4+idleDropStartY));
 		}
 	}
 	//drop
@@ -1068,11 +1068,12 @@ function drawIdleAnimation(time, context)
 	if(idleTimeSinceDrop>=dropRate)
 	{
 		idleTimeSinceDrop = 0;
-		//do stuff
+		idleDropStartY += idleDropSpeed;//this should be a rolling start value so all pieces line up on a rolling grid
+		idleDropStartY %= blockSize;
 		var minY = gameHeight;
 		for (i = 0; i < idlePieces.length; i++)
 		{
-			idlePiecePos[i].Y += dropSpeed;
+			idlePiecePos[i].Y += idleDropSpeed;
 			if(idlePiecePos[i].Y > gameHeight+blockSize*2)
 			{
 				//trim this idle piece since its off the screen
@@ -1089,7 +1090,8 @@ function drawIdleAnimation(time, context)
 	{
 		idleTimeSinceRotate = 0;
 		var i = Math.floor(Math.random()*idlePieces.length);
-		idlePieceBlocks[i] = rotatePieceSimple(idlePieceBlocks[i]);
+		if(idlePieces[i]!=7)//dont roate squares
+			idlePieceBlocks[i] = rotatePieceSimple(idlePieceBlocks[i]);
 	}
 	//render
 	for (i = 0; i < idlePieces.length; i++)
