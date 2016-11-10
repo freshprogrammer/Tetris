@@ -344,6 +344,7 @@ function tick()
 {
 	var now = window.performance.now();
 	var timeDif = now-lastTickTime;
+	lastTickTime = window.performance.now();
 	
 	framesThisInterval++;
 	if(now-lastIntervalEndTime > fpsInterval)
@@ -357,8 +358,6 @@ function tick()
 	
 	update(timeDif);
 	draw(timeDif);
-	
-	lastTickTime = window.performance.now();
 }
 
 function clearBoard()
