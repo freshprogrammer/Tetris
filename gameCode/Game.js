@@ -43,9 +43,11 @@ var showDebugInfo = true;
 var musicState = MusicState.Music;
 var backgroundMusic;
 var pieceSnapSound;
+var pieceDropSound;
+var pieceRotateSound;
 var lineClearSound;
-//var levelUpSound;
-//var tetrisSound;
+var levelUpSound;
+var tetrisSound;
 
 //fps tracking
 var fpsInterval = 1000;
@@ -213,11 +215,17 @@ function loadAssets()
 	backgroundMusic = new Audio('assets/audio/tetrisMusic.mp3');
 	backgroundMusic.loop = true;
 	backgroundMusic.volume = 0.1;
-	pieceSnapSound = new Audio('assets/audio/drop.wav');
-	pieceSnapSound.volume = 0.1;
-	lineClearSound = new Audio('assets/audio/moneySound.wav');
-	//levelUpSound = new Audio('assets/audio/drop.wav');
-	//tetrisSound = new Audio('assets/audio/drop.wav');
+	pieceRotateSound = new Audio('assets/audio/rotate_block.wav');
+	pieceRotateSound.volume = 0.6;
+	pieceSnapSound = new Audio('assets/audio/block_hits_bottom.wav');
+	pieceDropSound = new Audio('assets/audio/block_drop.wav');
+	pieceDropSound.playbackRate = 2.0;
+	pieceDropSound.volume = 0.4;
+	lineClearSound = new Audio('assets/audio/clear_one_line.wav');
+	lineClearSound.volume = 0.5;
+	tetrisSound = new Audio('assets/audio/moneySound.wav');//too quiet already
+	levelUpSound = new Audio('assets/audio/Tetris11LEVELUP.ogg');
+	levelUpSound.volume = 0.5;
 }
 
 function mouseMove(event)
@@ -464,10 +472,13 @@ function rotatePiece(clockwise)
 	if(minY<0)yShift = -1*minY;
 	else if(maxY>boardHeight-1)yShift = -1*(maxY-(boardHeight-1));
 	
+	var rotated = true;
 	if(!movePiece(xShift,yShift))
 	{
+		rotated = false;
 		rotatePiece(!clockwise);
 	}
+	return rotated;
 }
 
 function rotatePieceSimple(blocks)
@@ -487,7 +498,7 @@ function rotatePieceSimple(blocks)
 function dropPiece()
 {
 	while(movePiece(0,1));
-	snapPiece();
+	snapPiece(true);
 	timeSinceLastStep = 0;
 }
 
@@ -500,12 +511,15 @@ function lockInPiece()
 	}
 }
 
-function snapPiece()
+function snapPiece(dropped)
 {
 	lockInPiece();
+	if(dropped)
+		playPieceDropSound();
+		else
+		playPieceSnapSound();
 	scorePiecePlacement();
 	var linesCleared = checkAndClearLines();
-	playPieceSnapSound();
 	if(linesCleared==0)
 	{
 		if(!spawnNewPiece())
@@ -635,14 +649,19 @@ function playLineClearSound(lines)
 	if(lines>=4)
 	{
 		if(musicState!=MusicState.Mute)
-		//	tetrisSound.play();
-			lineClearSound.play();
+			tetrisSound.play();
 	}
 	else
 	{
 		if(musicState!=MusicState.Mute)
 			lineClearSound.play();
 	}
+}
+
+function playPieceDropSound()
+{
+	if(musicState!=MusicState.Mute)
+		pieceDropSound.play();
 }
 
 function playPieceSnapSound()
@@ -653,8 +672,17 @@ function playPieceSnapSound()
 
 function playLevelUpSound()
 {
-	//if(musicState!=MusicState.Mute)
-		//levelUpSound.play();
+	if(musicState!=MusicState.Mute)
+		levelUpSound.play();
+}
+
+function playRotateSound()
+{
+	if(musicState!=MusicState.Mute)
+	{
+		pieceRotateSound.currentTime = 0;
+		pieceRotateSound.play();
+	}
 }
 
 function scoreLinesClear(lines)
@@ -778,7 +806,7 @@ function pieceTickDown()
 	{
 		if(pieceSettledCount>=1)
 		{
-			snapPiece();
+			snapPiece(false);
 			pieceSettledCount = 0;
 		}
 		pieceSettledCount++;
@@ -858,16 +886,22 @@ function update(time)
 				if(gameInput.DownUnHandled)
 				{
 					if(!movePiece(0,1))
-						snapPiece();
+						snapPiece(false);
 				}
 				if(gameInput.LeftUnHandled)
 					movePiece(-1,0);
 				if(gameInput.RightUnHandled)
 					movePiece(1,0);
 				if(gameInput.RotRightUnHandled)
-					rotatePiece(false);
+				{
+					if(rotatePiece(false))
+						playRotateSound();
+				}
 				if(gameInput.RotLeftUnHandled)
-					rotatePiece(true);
+				{
+					if(rotatePiece(true))
+						playRotateSound();
+				}
 				if(gameInput.DropUnHandled)
 					dropPiece();
 				
