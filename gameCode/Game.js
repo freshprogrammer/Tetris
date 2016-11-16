@@ -83,7 +83,11 @@ var startLevel = 1;
 var timeSinceAnimationStarted = 0;//shared across all animations
 var lineAnimDurration = 1000;
 var lineAnimFlickerCount = 2;
-var tetrisAnimDurration = 5000;
+var tetrisAnimDurration = 1000;
+var tetrisAnimBlocks = [];
+var tetrisAnimPos = [];
+var tetrisAnimStart = [];
+var tetrisAnimVector = [];
 var newGameAnimDurration = 1000;
 var gameOverAnimDurration = 1000;
 var idleDropSpeed = 5;
@@ -828,8 +832,6 @@ function stopGameOverAnimation()
 	runIdleAnimation();
 }
 
-var tetrisAnimBlocks = [];
-var tetrisAnimPos = [];
 function runClearLineAnimation(lines)
 {
 	if(lines>=4)
@@ -838,12 +840,16 @@ function runClearLineAnimation(lines)
 		//define variables for animation
 		tetrisAnimBlocks = [];
 		tetrisAnimPos = [];
+		tetrisAnimStart = [];
+		tetrisAnimVector = [];
 		for (lineY = 0; lineY < linesToClear.length; lineY++)
 		{
 			for (var x = 0; x < boardWidth; x++)
 			{
 				tetrisAnimBlocks.push(boardSlots[x][linesToClear[lineY]]);
 				tetrisAnimPos.push(getSlotPos(x,linesToClear[lineY]));
+				tetrisAnimStart.push(getSlotPos(x,linesToClear[lineY]));
+				tetrisAnimVector.push(new Point((Math.random()*1200)-600,Math.random()*600+200));
 			}
 		}
 		//clear lines
@@ -896,10 +902,13 @@ function stopClearLineAnimation()
 
 function updateTetrisAnimation()
 {
+	var animationProgress = (timeSinceAnimationStarted*1.2)/tetrisAnimDurration;//go 20% past bottom
 	for (i = 0; i < tetrisAnimBlocks.length; i++)
 	{
-		tetrisAnimPos[i].X += 4*Math.random()-2;
-		tetrisAnimPos[i].Y += 4*Math.random()-2;
+		tetrisAnimPos[i].X = tetrisAnimVector[i].X*animationProgress;
+		tetrisAnimPos[i].Y = -1*tetrisAnimVector[i].Y*Math.sin((tetrisAnimPos[i].X*Math.PI) / tetrisAnimVector[i].X);
+		tetrisAnimPos[i].X += tetrisAnimStart[i].X;
+		tetrisAnimPos[i].Y += tetrisAnimStart[i].Y;
 	}
 }
 
