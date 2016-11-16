@@ -345,6 +345,7 @@ function gameStart()
 	
 	spawnNewPiece();//double to preload preview piece
 	spawnNewPiece();
+	gameInput.clearKeys();
 }
 
 function gameStop()
