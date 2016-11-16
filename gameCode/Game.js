@@ -3,6 +3,7 @@ GameState = {
     IdleAnimation : 'IdleAnimation',
     Playing : 'Playing',
     LineAnimating : 'LineAnimating',
+    TetrisAnimating : 'TetrisAnimating',
     NewGameAnimation : 'NewGameAnimation',
 	GameOverAnimation : 'GameOverAnimation',
 	GameOver : 'GameOver'
@@ -82,6 +83,7 @@ var startLevel = 1;
 var timeSinceAnimationStarted = 0;//shared across all animations
 var lineAnimDurration = 1000;
 var lineAnimFlickerCount = 2;
+var tetrisAnimDurration = 5000;
 var newGameAnimDurration = 1000;
 var gameOverAnimDurration = 1000;
 var idleDropSpeed = 5;
@@ -562,7 +564,7 @@ function checkAndClearLines()
 	if(linesCleared>0)
 	{
 		scoreLinesClear(linesCleared);
-		runClearLineAnimation();
+		runClearLineAnimation(linesCleared);
 	}
 	return linesCleared;
 }
@@ -825,9 +827,32 @@ function stopGameOverAnimation()
 	runIdleAnimation();
 }
 
-function runClearLineAnimation()
+var tetrisAnimBlocks = [];
+var tetrisAnimPos = [];
+function runClearLineAnimation(lines)
 {
-	gameState=GameState.LineAnimating;
+	if(lines>=4)
+	{
+		gameState=GameState.TetrisAnimating;
+		//define variables for animation
+		tetrisAnimBlocks = [];
+		tetrisAnimPos = [];
+		for (lineY = 0; lineY < linesToClear.length; lineY++)
+		{
+			for (var x = 0; x < boardWidth; x++)
+			{
+				tetrisAnimBlocks.push(boardSlots[x][linesToClear[lineY]]);
+				tetrisAnimPos.push(getSlotPos(x,linesToClear[lineY]));
+			}
+		}
+		//clear lines
+		for (i = 0; i < linesToClear.length; i++)
+		{
+			setLineSlot(linesToClear[i],BoardSlot.Empty);
+		}
+	}
+	else
+		gameState=GameState.LineAnimating;
 	timeSinceAnimationStarted=0;
 	stopwatch.stop();
 }
@@ -865,6 +890,15 @@ function stopClearLineAnimation()
 	{
 		//game over
 		gameOver();
+	}
+}
+
+function updateTetrisAnimation()
+{
+	for (i = 0; i < tetrisAnimBlocks.length; i++)
+	{
+		tetrisAnimPos[i].X += 4*Math.random()-2;
+		tetrisAnimPos[i].Y += 4*Math.random()-2;
 	}
 }
 
@@ -916,7 +950,7 @@ function update(time)
 				pieceTickDown();
 			}
 		}
-		else if(gameState==GameState.LineAnimating || gameState==GameState.NewGameAnimation || gameState==GameState.GameOverAnimation)
+		else if(gameState==GameState.LineAnimating || gameState==GameState.TetrisAnimating || gameState==GameState.NewGameAnimation || gameState==GameState.GameOverAnimation)
 		{
 			timeSinceAnimationStarted+=time;
 			if(gameState==GameState.LineAnimating)
@@ -924,6 +958,15 @@ function update(time)
 				//clear lines and return to game
 				updateLineClearAnimation();
 				if(timeSinceAnimationStarted>=lineAnimDurration)
+				{
+					stopClearLineAnimation();
+				}
+			}
+			else if(gameState==GameState.TetrisAnimating)
+			{
+				//clear lines and return to game
+				updateTetrisAnimation();
+				if(timeSinceAnimationStarted>=tetrisAnimDurration)
 				{
 					stopClearLineAnimation();
 				}
@@ -1051,7 +1094,7 @@ function draw(time)
 		if(gameState==GameState.GameOver)
 			drawBigCenterString(45,"Game Over", context);
 	}
-	else if(gameState==GameState.Playing || gameState==GameState.LineAnimating)
+	else if(gameState==GameState.Playing || gameState==GameState.LineAnimating || gameState==GameState.TetrisAnimating)
 	{
 		drawBoard(context);
 		
@@ -1060,6 +1103,18 @@ function draw(time)
 			drawNextPiece(context);
 			if(gameState==GameState.Playing || gameState==GameState.GameOver || gameState==GameState.GameOverAnimation)
 				drawActivePiece(context);
+		}
+		
+		if(gameState==GameState.TetrisAnimating)
+		{
+			//draw blocks
+			for (i = 0; i < tetrisAnimBlocks.length; i++)
+			{
+				tetrisAnimPos[i]
+				var img = getBlockImage(tetrisAnimBlocks[i]);
+				if(img!=null)
+					context.drawImage(img, tetrisAnimPos[i].X,tetrisAnimPos[i].Y, blockSize, blockSize);
+			}
 		}
 		
 		if(gamePaused)
@@ -1203,7 +1258,7 @@ function drawBoard(context)
 			var blockPos = getSlotPos(x,y);
 			var img = getBlockImage(boardSlots[x][y]);
 			if(img!=null)
-				context.drawImage(getBlockImage(boardSlots[x][y]), blockPos.X,blockPos.Y, blockSize, blockSize);
+				context.drawImage(img, blockPos.X,blockPos.Y, blockSize, blockSize);
 		}
 	}
 }
