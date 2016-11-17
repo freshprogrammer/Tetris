@@ -12,12 +12,16 @@
 	}
 	
 	function HandleInput()
-	{
+	{//assume this data is good
 		$name = GetInput("name");
 		$score = GetInput("score");
 		$lines = GetInput("lines");
 		$tetris = GetInput("tetris");
 		$time = GetInput("time");
+		
+		//screw you if yotu put a special char in your name
+		$name = str_replace(",",";",$name);
+		$name = str_replace("\n"," ",$name);
 		
 		$valid = strlen($name)>0;
 		$valid = $valid&&strlen($score)>0;
