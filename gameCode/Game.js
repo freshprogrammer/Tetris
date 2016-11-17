@@ -139,18 +139,7 @@ var stopwatch = new Stopwatch();
 
 function gameBootstrap()
 {	
-	//testcode
-	/*
-	var test = "";
-	var test2 = "";
-	var xhr = new XMLHttpRequest();
-	xhr.open('GET', 'http://freshprogramming.com/miniTools/jsTetris/tetrisScores.php', true);
-	xhr.onreadystatechange = function() {
-	  if (xhr.readyState === 4)  { 
-		console.log(xhr.responseText);
-	  }
-	};
-	xhr.send(null);*/
+	LoadScores();
 
 	canvas = document.getElementById(canvasID);
 	gameWidth = canvas.width;
@@ -176,6 +165,66 @@ function gameBootstrap()
 	
 	gameState = GameState.Menu;
 	runIdleAnimation();
+}
+
+var highScoreLimit = 1000;
+var highScores = [];
+
+function LoadScores()
+{
+	var scoresURL = 'http://freshprogramming.com/miniTools/jsTetris/tetrisScores.php';
+	var scoresData = "";
+	
+	var xhr = new XMLHttpRequest();
+	xhr.open('GET', scoresURL, true);
+	xhr.onreadystatechange = function()
+	{
+		if (xhr.readyState === 4)
+			scoresData = xhr.responseText;
+		
+		if(scoresData=="")
+		{//test data
+			scoresData = `
+tester,1500,25,3,"05:30",67.208.46.84,2016-10-29 00:00:00
+tester,1200,25,2,"05:30",67.208.46.84,2016-11-01 00:00:00
+tester,1500,25,3,"05:30",67.208.46.84,2016-11-02 00:00:00
+tester, 500,25,1,"05:30",67.208.46.84,2016-11-03 00:00:00
+tester,5500,25,3,"05:30",67.208.46.84,2016-11-04 00:00:00`;
+		}
+		
+		highScores = [];
+		scoresData = scoresData.trim();
+		var scores = scoresData.split("\n")
+		
+		for (var i = 0; i < scores.length; i++)
+		{
+			var fields = scores[i].trim().split(",");
+			var k = 0;
+			var name   = fields[k++];
+			var score  = fields[k++];
+			var lines  = fields[k++];
+			var tetris = fields[k++];
+			var time   = fields[k++];
+			var ip     = fields[k++];
+			var stamp  = fields[k++];
+			
+			var s = new TetrisScore(name,score,lines,tetris,time,ip,stamp);
+			highScores.push(s);
+			//console.log(s.toString());
+		}
+		SortHighScores();
+	};
+	xhr.send(null);
+}
+
+function SortHighScores()
+{
+	/*for (var i = 0; i < highScores.length; i++)
+	{
+		if(highScores[i]>?????)
+		highScores.push(s);
+		console.log(s);
+	}*/
 }
 
 function runIdleAnimation()
@@ -1132,6 +1181,27 @@ function draw(time)
 	}
 	
 	drawInfo(context);
+	drawHighScores(context);
+}
+
+function drawHighScores(context)
+{
+	var xPos = boardPos.X + boardWidth * blockSize + 220;
+	var yPos = boardPos.Y + 25;
+	var ySeperation = 25;
+	context.font = '20pt Calibri';
+	context.fillStyle = 'black';
+	
+	var maxLinesOnScreen = 20;
+	var linesOnScreen = 0;
+	context.fillText("  HighScores", xPos, yPos);
+	for (var i = 0; i < highScores.length; i++)
+	{
+		linesOnScreen++;
+		context.fillText("#"+i+":"+highScores[i].Name+" - "+highScores[i].Score, xPos, yPos+ySeperation*(i+1));//i+1 for header line above
+		if(linesOnScreen>maxLinesOnScreen)
+			break;
+	}
 }
 
 function drawIdleAnimation(time, context)
@@ -1290,3 +1360,18 @@ function getSlotPos(slotX, slotY)
 {
 	return new Point(slotX*blockSize + boardPos.X, slotY*blockSize + boardPos.Y);
 }
+//TetrisScore
+function TetrisScore(n,s,l,t,time,ip,stamp)
+{
+	this.Name   = n;
+	this.Score  = s;
+	this.Lines  = l;
+	this.Tetris = t;
+	this.Time   = time;
+	this.IP     = ip;
+	this.Stamp  = stamp;
+}
+TetrisScore.prototype.toString=function()
+{
+	return '[TetrisScore('+this.Name+'-'+this.Score+')]';
+};
