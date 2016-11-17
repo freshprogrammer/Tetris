@@ -136,6 +136,9 @@ var level = 1;
 var tetrises = 0;
 var scoredTetrisLast = false;
 var stopwatch = new Stopwatch();
+var scoresURL = 'http://freshprogramming.com/miniTools/jsTetris/tetrisScores.php';
+var highScoreLimit = 1000;
+var highScores = [];
 
 function gameBootstrap()
 {	
@@ -167,18 +170,13 @@ function gameBootstrap()
 	runIdleAnimation();
 }
 
-var highScoreLimit = 1000;
-var highScores = [];
-
 function LoadScores()
 {
-	var scoresURL = 'http://freshprogramming.com/miniTools/jsTetris/tetrisScores.php';
-	var scoresData = "";
-	
 	var xhr = new XMLHttpRequest();
 	xhr.open('GET', scoresURL, true);
 	xhr.onreadystatechange = function()
 	{
+		var scoresData = "";
 		if (xhr.readyState === 4)
 			scoresData = xhr.responseText;
 		
@@ -215,6 +213,22 @@ tester,5500,25,3,"05:30",67.208.46.84,2016-11-04 00:00:00`;
 		SortHighScores();
 	};
 	xhr.send(null);
+}
+
+function UploadHighScore()
+{
+	var player = prompt("Please enter your name to save your score", "player 1");
+	if(player!=null && player.length>0)
+	{
+		var scoreData = "?name="+player+"&score="+score+"&lines="+totalLinesCleared+"&tetris="+tetrises+"&time="+stopwatch.formattedTime();
+		var xhr = new XMLHttpRequest();
+		xhr.open('GET', scoresURL+scoreData, true);
+		xhr.onreadystatechange = function()
+		{
+			LoadScores();
+		};
+		xhr.send(null);
+	}
 }
 
 function SortHighScores()
@@ -879,6 +893,7 @@ function stopGameOverAnimation()
 {
 	gameState=GameState.GameOver;
 	runIdleAnimation();
+	UploadHighScore();
 }
 
 function runClearLineAnimation(lines)

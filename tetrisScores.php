@@ -37,7 +37,7 @@
 			$stamp = date( "Y-m-d H:i:s");
 			
 			$scoreString = $name.",".$score.",".$lines.",".$tetris.",".$time.",".$ip.",".$stamp;
-			AppendScore($scoreString);
+			AppendScore(trim($scoreString));
 		}
 	}
 	
@@ -57,7 +57,6 @@
 	{
 		$scores = ReadScores();
 		$scores[]=$newScore;
-		
 		WriteScores($scores);
 	}
 	
@@ -72,7 +71,7 @@
 			file_put_contents($scoresFile, $data);
 		}
 
-		$scores = explode("\n", $data);
+		$scores = explode("\n", trim($data));
 		return $scores;
 	}
 	
