@@ -137,7 +137,6 @@ var tetrises = 0;
 var scoredTetrisLast = false;
 var stopwatch = new Stopwatch();
 var scoresURL = 'http://freshprogramming.com/miniTools/jsTetris/tetrisScores.php';
-var highScoreLimit = 1000;
 var highScores = [];
 
 function gameBootstrap()
@@ -186,8 +185,9 @@ function LoadScores()
 tester,1500,25,3,"05:30",67.208.46.84,2016-10-29 00:00:00
 tester,1200,25,2,"05:30",67.208.46.84,2016-11-01 00:00:00
 tester,1500,25,3,"05:30",67.208.46.84,2016-11-02 00:00:00
-tester, 500,25,1,"05:30",67.208.46.84,2016-11-03 00:00:00
-tester,5500,25,3,"05:30",67.208.46.84,2016-11-04 00:00:00`;
+tester,500 ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:00
+tester,5500,25,3,"05:30",67.208.46.84,2016-11-04 00:00:00
+tester,30  ,25,3,"05:30",67.208.46.84,2016-11-04 00:00:00`;
 		}
 		
 		highScores = [];
@@ -199,9 +199,9 @@ tester,5500,25,3,"05:30",67.208.46.84,2016-11-04 00:00:00`;
 			var fields = scores[i].trim().split(",");
 			var k = 0;
 			var name   = fields[k++];
-			var score  = fields[k++];
-			var lines  = fields[k++];
-			var tetris = fields[k++];
+			var score  = +fields[k++];
+			var lines  = +fields[k++];
+			var tetris = +fields[k++];
 			var time   = fields[k++];
 			var ip     = fields[k++];
 			var stamp  = fields[k++];
@@ -210,7 +210,7 @@ tester,5500,25,3,"05:30",67.208.46.84,2016-11-04 00:00:00`;
 			highScores.push(s);
 			//console.log(s.toString());
 		}
-		SortHighScores();
+		highScores = SortHighScores(highScores);
 	};
 	xhr.send(null);
 }
@@ -231,14 +231,27 @@ function UploadHighScore()
 	}
 }
 
-function SortHighScores()
-{
-	/*for (var i = 0; i < highScores.length; i++)
+function SortHighScores(highScores)
+{//sort desc
+	var sortedScores = [];
+	for (var i = 0; i < highScores.length; i++)
 	{
-		if(highScores[i]>?????)
-		highScores.push(s);
-		console.log(s);
-	}*/
+		var added = false;
+		for (var k = 0; k < sortedScores.length; k++)
+		{
+			if(sortedScores[k].Score < highScores[i].Score)
+			{
+				added = true;
+				sortedScores.splice(k, 0, highScores[i]);
+				break;
+			}
+		}
+		if(!added)
+		{
+			sortedScores.push(highScores[i]);
+		}
+	}
+	return sortedScores;
 }
 
 function runIdleAnimation()
@@ -1209,11 +1222,11 @@ function drawHighScores(context)
 	
 	var maxLinesOnScreen = 20;
 	var linesOnScreen = 0;
-	context.fillText("  HighScores", xPos, yPos);
+	context.fillText("HighScores", xPos, yPos);
 	for (var i = 0; i < highScores.length; i++)
 	{
 		linesOnScreen++;
-		context.fillText("#"+i+":"+highScores[i].Name+" - "+highScores[i].Score, xPos, yPos+ySeperation*(i+1));//i+1 for header line above
+		context.fillText("#"+(i+1)+":"+highScores[i].Name+" - "+highScores[i].Score, xPos, yPos+ySeperation*(i+1));//the y (i+1) is for header line above
 		if(linesOnScreen>maxLinesOnScreen)
 			break;
 	}
