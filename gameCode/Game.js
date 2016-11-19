@@ -432,6 +432,10 @@ function gamePause()
 		toggleMusicPause();
 		gameInput.clearKeys();//clear keys pressed while paused
 	}
+	else if(gameState==GameState.GameOver)
+	{
+		gameState=GameState.Menu;//maybe make this an animation
+	}
 }
 
 function gameStart()
@@ -1133,14 +1137,14 @@ function drawInfo(context)
 	{
 		line++;
 		line++;
-		context.fillText("FPS:"+lastIntervalFPS,            xPos,yPos+ySeperation*line++);
+		context.fillText("FPS:"+lastIntervalFPS,                       xPos,yPos+ySeperation*line++);
 		//context.fillText("FPS:"+lastIntervalFPS+" - "+framesThisInterval,xPos,yPos+ySeperation*line++);
-		context.fillText("State:"+gameState,                xPos,yPos+ySeperation*line++);
-		context.fillText("Sound:"+musicState,               xPos,yPos+ySeperation*line++);
-		context.fillText("Keys:"+keysPressed,               xPos,yPos+ySeperation*line++);
-		context.fillText("Input:"+gameInput,                xPos,yPos+ySeperation*line++);
-		context.fillText("Idle:"+idleAnimationState,        xPos,yPos+ySeperation*line++);
-		context.fillText("  idles:"+idlePieces.length,      xPos,yPos+ySeperation*line++);
+		context.fillText("State:"+gameState+(gamePaused?"-Paused":""), xPos,yPos+ySeperation*line++);
+		context.fillText("Sound:"+musicState,                          xPos,yPos+ySeperation*line++);
+		context.fillText("Keys:"+keysPressed,                          xPos,yPos+ySeperation*line++);
+		context.fillText("Input:"+gameInput,                           xPos,yPos+ySeperation*line++);
+		context.fillText("Idle:"+idleAnimationState,                   xPos,yPos+ySeperation*line++);
+		context.fillText("  idles:"+idlePieces.length,                 xPos,yPos+ySeperation*line++);
 	}
 }
 
