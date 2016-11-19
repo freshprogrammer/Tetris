@@ -39,7 +39,7 @@ var tickDelay = 4;
 var lastTickTime = 0;
 var gameWidth;
 var gameHeight;
-var showDebugInfo = true;
+var showDebugInfo = false;
 
 var musicState = MusicState.Music;
 var backgroundMusic;
@@ -1152,7 +1152,6 @@ function draw(time)
 {
 	var context = canvas.getContext("2d");
 	context.clearRect (0,0,gameWidth,gameHeight);
-
 	
 	//canvas background
 	context.fillStyle = "rgb(112, 146, 190)";
