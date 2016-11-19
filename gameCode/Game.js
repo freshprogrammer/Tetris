@@ -138,6 +138,8 @@ var scoredTetrisLast = false;
 var stopwatch = new Stopwatch();
 var scoresURL = 'http://freshprogramming.com/miniTools/jsTetris/tetrisScores.php';
 var highScores = [];
+var highScoresPos = 0;
+var maxScoresOnScreen = 21;//+1 for 10 + "more" line
 
 function gameBootstrap()
 {	
@@ -189,20 +191,10 @@ tester,1500,25,3,"05:30",67.208.46.84,2016-11-02 00:00:03
 tester,500 ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:04
 tester,5500,25,1,"05:30",67.208.46.84,2016-11-03 00:00:05
 tester,10  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:06
-tester,10  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:07
+tester,11  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:07
 tester,20  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:08
-tester,20  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:09
-tester,20  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:10
-tester,20  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:20
-tester,20  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:21
-tester,20  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:22
-tester,20  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:23
-tester,20  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:24
-tester,20  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:25
-tester,20  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:26
-tester,20  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:27
-tester,20  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:28
-tester,20  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:29
+tester,22  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:09
+tester,21  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:10
 tester,5   ,25,3,"05:30",67.208.46.84,2016-11-04 00:00:20
 tester,4   ,25,3,"05:30",67.208.46.84,2016-11-04 00:00:00
 tester,3   ,25,3,"05:30",67.208.46.84,2016-11-04 00:00:00
@@ -1254,17 +1246,14 @@ function draw(time)
 	drawHighScores(context);
 }
 
-var highScoresPos = 1;
-var maxScoresOnScreen = 21;
-
 function scrollHighScores(shift)
 {
 	var maxPos = highScores.length-maxScoresOnScreen+1;
 	highScoresPos += shift;
-	if(highScoresPos < 0)
-		highScoresPos = 0;
 	if(highScoresPos > maxPos)
 		highScoresPos = maxPos;
+	if(highScoresPos < 0)
+		highScoresPos = 0;
 }
 
 function drawHighScores(context)
