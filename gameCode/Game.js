@@ -154,6 +154,7 @@ function gameBootstrap()
 	canvas.addEventListener('mouseup',   function(evt) {mouseUp(evt);}, false);
 	document.addEventListener('keydown', function(evt) {keyDown(evt);}, false);
 	document.addEventListener('keyup',   function(evt) {keyUp(evt);}, false);
+	document.addEventListener('wheel',   function(evt) {mouseWheel(evt);}, false);
 	
 	//setup game for first run
 	//systems
@@ -182,12 +183,32 @@ function LoadScores()
 		if(scoresData=="")
 		{//test data
 			scoresData = `
-tester,1500,25,3,"05:30",67.208.46.84,2016-10-29 00:00:00
-tester,1200,25,2,"05:30",67.208.46.84,2016-11-01 00:00:00
-tester,1500,25,3,"05:30",67.208.46.84,2016-11-02 00:00:00
-tester,500 ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:00
-tester,5500,25,3,"05:30",67.208.46.84,2016-11-04 00:00:00
-tester,30  ,25,3,"05:30",67.208.46.84,2016-11-04 00:00:00`;
+tester,1500,25,3,"05:30",67.208.46.84,2016-10-29 00:00:01
+tester,1200,25,2,"05:30",67.208.46.84,2016-11-01 00:00:02
+tester,1500,25,3,"05:30",67.208.46.84,2016-11-02 00:00:03
+tester,500 ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:04
+tester,5500,25,1,"05:30",67.208.46.84,2016-11-03 00:00:05
+tester,10  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:06
+tester,10  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:07
+tester,20  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:08
+tester,20  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:09
+tester,20  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:10
+tester,20  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:20
+tester,20  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:21
+tester,20  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:22
+tester,20  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:23
+tester,20  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:24
+tester,20  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:25
+tester,20  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:26
+tester,20  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:27
+tester,20  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:28
+tester,20  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:29
+tester,5   ,25,3,"05:30",67.208.46.84,2016-11-04 00:00:20
+tester,4   ,25,3,"05:30",67.208.46.84,2016-11-04 00:00:00
+tester,3   ,25,3,"05:30",67.208.46.84,2016-11-04 00:00:00
+tester,2   ,25,3,"05:30",67.208.46.84,2016-11-04 00:00:00
+tester,1   ,25,3,"05:30",67.208.46.84,2016-11-04 00:00:00
+tester,0   ,25,3,"05:30",67.208.46.84,2016-11-04 00:00:00`;
 		}
 		
 		highScores = [];
@@ -351,6 +372,14 @@ function keyUp(event)
 	//console.log("keyUp");
 }
 
+function mouseWheel(event)
+{
+	if(event.wheelDelta<0)
+		scrollHighScores(1);
+	else if(event.wheelDelta>0)
+		scrollHighScores(-1);
+}
+
 function processInput(time)
 {
 	var currentGameInput = new GameInput();
@@ -377,7 +406,7 @@ function processInput(time)
 			currentGameInput.NewGamePressed = true;
 	}
 	
-	if(currentGameInput.DownPressed)   gameInput.DownUnHandled = true;
+	if(currentGameInput.DownPressed && !gameInput.DownPressed)   gameInput.DownUnHandled = true;
 	if(currentGameInput.LeftPressed && !gameInput.LeftPressed)   gameInput.LeftUnHandled = true;
 	if(currentGameInput.RightPressed && !gameInput.RightPressed) gameInput.RightUnHandled = true;
 	if(currentGameInput.PausePressed && !gameInput.PausePressed) gamePause();
@@ -1006,6 +1035,7 @@ function update(time)
 				//handle pressed keys
 				if(gameInput.DownUnHandled)
 				{
+					gameInput.DownPressed = false;
 					if(!movePiece(0,1))
 						snapPiece(false);
 				}
@@ -1068,6 +1098,18 @@ function update(time)
 				stopGameOverAnimation();
 			}
 		}
+	}
+	if(gameState==GameState.Menu || gameState==GameState.GameOver || gamePaused)
+	{
+		if(gameInput.LeftUnHandled)
+		{
+			scrollHighScores(-2);
+		}
+		if(gameInput.RightUnHandled)
+		{
+			scrollHighScores(2);
+		}
+		gameInput.handledInput();
 	}
 }
 
@@ -1212,6 +1254,19 @@ function draw(time)
 	drawHighScores(context);
 }
 
+var highScoresPos = 1;
+var maxScoresOnScreen = 21;
+
+function scrollHighScores(shift)
+{
+	var maxPos = highScores.length-maxScoresOnScreen+1;
+	highScoresPos += shift;
+	if(highScoresPos < 0)
+		highScoresPos = 0;
+	if(highScoresPos > maxPos)
+		highScoresPos = maxPos;
+}
+
 function drawHighScores(context)
 {
 	var xPos = boardPos.X + boardWidth * blockSize + 220;
@@ -1220,16 +1275,21 @@ function drawHighScores(context)
 	context.font = '20pt Calibri';
 	context.fillStyle = 'black';
 	
-	var maxLinesOnScreen = 20;
-	var linesOnScreen = 0;
+	var maxPos = highScores.length-maxScoresOnScreen+1;
+	var lineNo = 0;
+	var scoresOnScreen = 0;
 	context.fillText("HighScores", xPos, yPos);
-	for (var i = 0; i < highScores.length; i++)
+	if(highScoresPos>0)
+		context.fillText("  ↑ More ↑", xPos, yPos+ySeperation*(++lineNo));
+	for (var i = highScoresPos; i < highScores.length; i++)
 	{
-		linesOnScreen++;
-		context.fillText("#"+(i+1)+":"+highScores[i].Name+" - "+highScores[i].Score, xPos, yPos+ySeperation*(i+1));//the y (i+1) is for header line above
-		if(linesOnScreen>maxLinesOnScreen)
+		context.fillText("#"+(i+1)+":"+highScores[i].Name+" - "+highScores[i].Score, xPos, yPos+ySeperation*(++lineNo));//the y (i+1) is for header line above
+		scoresOnScreen++;
+		if(scoresOnScreen>=maxScoresOnScreen-(highScoresPos>0)-(highScoresPos<maxPos))
 			break;
 	}
+	if(highScoresPos<maxPos)
+		context.fillText("  ↓ More ↓", xPos, yPos+ySeperation*(++lineNo));
 }
 
 function drawIdleAnimation(time, context)
