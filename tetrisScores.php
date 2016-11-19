@@ -12,12 +12,16 @@
 	}
 	
 	function HandleInput()
-	{
+	{//assume this data is good
 		$name = GetInput("name");
 		$score = GetInput("score");
 		$lines = GetInput("lines");
 		$tetris = GetInput("tetris");
 		$time = GetInput("time");
+		
+		//screw you if yotu put a special char in your name
+		$name = str_replace(",",";",$name);
+		$name = str_replace("\n"," ",$name);
 		
 		$valid = strlen($name)>0;
 		$valid = $valid&&strlen($score)>0;
@@ -33,7 +37,7 @@
 			$stamp = date( "Y-m-d H:i:s");
 			
 			$scoreString = $name.",".$score.",".$lines.",".$tetris.",".$time.",".$ip.",".$stamp;
-			AppendScore($scoreString);
+			AppendScore(trim($scoreString));
 		}
 	}
 	
@@ -53,7 +57,6 @@
 	{
 		$scores = ReadScores();
 		$scores[]=$newScore;
-		
 		WriteScores($scores);
 	}
 	
@@ -68,7 +71,7 @@
 			file_put_contents($scoresFile, $data);
 		}
 
-		$scores = explode("\n", $data);
+		$scores = explode("\n", trim($data));
 		return $scores;
 	}
 	

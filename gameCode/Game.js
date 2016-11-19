@@ -39,7 +39,7 @@ var tickDelay = 4;
 var lastTickTime = 0;
 var gameWidth;
 var gameHeight;
-var showDebugInfo = true;
+var showDebugInfo = false;
 
 var musicState = MusicState.Music;
 var backgroundMusic;
@@ -136,21 +136,14 @@ var level = 1;
 var tetrises = 0;
 var scoredTetrisLast = false;
 var stopwatch = new Stopwatch();
+var scoresURL = 'http://freshprogramming.com/miniTools/jsTetris/tetrisScores.php';
+var highScores = [];
+var highScoresPos = 0;
+var maxScoresOnScreen = 21;//+1 for 10 + "more" line
 
 function gameBootstrap()
 {	
-	//testcode
-	/*
-	var test = "";
-	var test2 = "";
-	var xhr = new XMLHttpRequest();
-	xhr.open('GET', 'http://freshprogramming.com/miniTools/jsTetris/tetrisScores.php', true);
-	xhr.onreadystatechange = function() {
-	  if (xhr.readyState === 4)  { 
-		console.log(xhr.responseText);
-	  }
-	};
-	xhr.send(null);*/
+	LoadScores();
 
 	canvas = document.getElementById(canvasID);
 	gameWidth = canvas.width;
@@ -163,6 +156,7 @@ function gameBootstrap()
 	canvas.addEventListener('mouseup',   function(evt) {mouseUp(evt);}, false);
 	document.addEventListener('keydown', function(evt) {keyDown(evt);}, false);
 	document.addEventListener('keyup',   function(evt) {keyUp(evt);}, false);
+	document.addEventListener('wheel',   function(evt) {mouseWheel(evt);}, false);
 	
 	//setup game for first run
 	//systems
@@ -176,6 +170,101 @@ function gameBootstrap()
 	
 	gameState = GameState.Menu;
 	runIdleAnimation();
+}
+
+function LoadScores()
+{
+	var xhr = new XMLHttpRequest();
+	xhr.open('GET', scoresURL, true);
+	xhr.onreadystatechange = function()
+	{
+		var scoresData = "";
+		if (xhr.readyState === 4)
+			scoresData = xhr.responseText;
+		
+		if(scoresData=="")
+		{//test data
+			scoresData = `
+tester,1500,25,3,"05:30",67.208.46.84,2016-10-29 00:00:01
+tester,1200,25,2,"05:30",67.208.46.84,2016-11-01 00:00:02
+tester,1500,25,3,"05:30",67.208.46.84,2016-11-02 00:00:03
+tester,500 ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:04
+tester,5500,25,1,"05:30",67.208.46.84,2016-11-03 00:00:05
+tester,10  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:06
+tester,11  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:07
+tester,20  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:08
+tester,22  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:09
+tester,21  ,25,1,"05:30",67.208.46.84,2016-11-03 00:00:10
+tester,5   ,25,3,"05:30",67.208.46.84,2016-11-04 00:00:20
+tester,4   ,25,3,"05:30",67.208.46.84,2016-11-04 00:00:00
+tester,3   ,25,3,"05:30",67.208.46.84,2016-11-04 00:00:00
+tester,2   ,25,3,"05:30",67.208.46.84,2016-11-04 00:00:00
+tester,1   ,25,3,"05:30",67.208.46.84,2016-11-04 00:00:00
+tester,0   ,25,3,"05:30",67.208.46.84,2016-11-04 00:00:00`;
+		}
+		
+		highScores = [];
+		scoresData = scoresData.trim();
+		var scores = scoresData.split("\n")
+		
+		for (var i = 0; i < scores.length; i++)
+		{
+			var fields = scores[i].trim().split(",");
+			var k = 0;
+			var name   = fields[k++];
+			var score  = +fields[k++];
+			var lines  = +fields[k++];
+			var tetris = +fields[k++];
+			var time   = fields[k++];
+			var ip     = fields[k++];
+			var stamp  = fields[k++];
+			
+			var s = new TetrisScore(name,score,lines,tetris,time,ip,stamp);
+			highScores.push(s);
+			//console.log(s.toString());
+		}
+		highScores = SortHighScores(highScores);
+	};
+	xhr.send(null);
+}
+
+function UploadHighScore()
+{
+	var player = prompt("Please enter your name to save your score", "player 1");
+	if(player!=null && player.length>0)
+	{
+		var scoreData = "?name="+player+"&score="+score+"&lines="+totalLinesCleared+"&tetris="+tetrises+"&time="+stopwatch.formattedTime();
+		var xhr = new XMLHttpRequest();
+		xhr.open('GET', scoresURL+scoreData, true);
+		xhr.onreadystatechange = function()
+		{
+			LoadScores();
+		};
+		xhr.send(null);
+	}
+}
+
+function SortHighScores(highScores)
+{//sort desc
+	var sortedScores = [];
+	for (var i = 0; i < highScores.length; i++)
+	{
+		var added = false;
+		for (var k = 0; k < sortedScores.length; k++)
+		{
+			if(sortedScores[k].Score < highScores[i].Score)
+			{
+				added = true;
+				sortedScores.splice(k, 0, highScores[i]);
+				break;
+			}
+		}
+		if(!added)
+		{
+			sortedScores.push(highScores[i]);
+		}
+	}
+	return sortedScores;
 }
 
 function runIdleAnimation()
@@ -275,6 +364,14 @@ function keyUp(event)
 	//console.log("keyUp");
 }
 
+function mouseWheel(event)
+{
+	if(event.wheelDelta<0)
+		scrollHighScores(1);
+	else if(event.wheelDelta>0)
+		scrollHighScores(-1);
+}
+
 function processInput(time)
 {
 	var currentGameInput = new GameInput();
@@ -301,7 +398,7 @@ function processInput(time)
 			currentGameInput.NewGamePressed = true;
 	}
 	
-	if(currentGameInput.DownPressed)   gameInput.DownUnHandled = true;
+	if(currentGameInput.DownPressed && !gameInput.DownPressed)   gameInput.DownUnHandled = true;
 	if(currentGameInput.LeftPressed && !gameInput.LeftPressed)   gameInput.LeftUnHandled = true;
 	if(currentGameInput.RightPressed && !gameInput.RightPressed) gameInput.RightUnHandled = true;
 	if(currentGameInput.PausePressed && !gameInput.PausePressed) gamePause();
@@ -334,6 +431,10 @@ function gamePause()
 		
 		toggleMusicPause();
 		gameInput.clearKeys();//clear keys pressed while paused
+	}
+	else if(gameState==GameState.GameOver)
+	{
+		gameState=GameState.Menu;//maybe make this an animation
 	}
 }
 
@@ -830,6 +931,7 @@ function stopGameOverAnimation()
 {
 	gameState=GameState.GameOver;
 	runIdleAnimation();
+	UploadHighScore();
 }
 
 function runClearLineAnimation(lines)
@@ -929,6 +1031,7 @@ function update(time)
 				//handle pressed keys
 				if(gameInput.DownUnHandled)
 				{
+					gameInput.DownPressed = false;
 					if(!movePiece(0,1))
 						snapPiece(false);
 				}
@@ -992,6 +1095,18 @@ function update(time)
 			}
 		}
 	}
+	if(gameState==GameState.Menu || gameState==GameState.GameOver || gamePaused)
+	{
+		if(gameInput.LeftUnHandled)
+		{
+			scrollHighScores(-2);
+		}
+		if(gameInput.RightUnHandled)
+		{
+			scrollHighScores(2);
+		}
+		gameInput.handledInput();
+	}
 }
 
 function drawInfo(context)
@@ -1022,14 +1137,14 @@ function drawInfo(context)
 	{
 		line++;
 		line++;
-		context.fillText("FPS:"+lastIntervalFPS,            xPos,yPos+ySeperation*line++);
+		context.fillText("FPS:"+lastIntervalFPS,                       xPos,yPos+ySeperation*line++);
 		//context.fillText("FPS:"+lastIntervalFPS+" - "+framesThisInterval,xPos,yPos+ySeperation*line++);
-		context.fillText("State:"+gameState,                xPos,yPos+ySeperation*line++);
-		context.fillText("Sound:"+musicState,               xPos,yPos+ySeperation*line++);
-		context.fillText("Keys:"+keysPressed,               xPos,yPos+ySeperation*line++);
-		context.fillText("Input:"+gameInput,                xPos,yPos+ySeperation*line++);
-		context.fillText("Idle:"+idleAnimationState,        xPos,yPos+ySeperation*line++);
-		context.fillText("  idles:"+idlePieces.length,      xPos,yPos+ySeperation*line++);
+		context.fillText("State:"+gameState+(gamePaused?"-Paused":""), xPos,yPos+ySeperation*line++);
+		context.fillText("Sound:"+musicState,                          xPos,yPos+ySeperation*line++);
+		context.fillText("Keys:"+keysPressed,                          xPos,yPos+ySeperation*line++);
+		context.fillText("Input:"+gameInput,                           xPos,yPos+ySeperation*line++);
+		context.fillText("Idle:"+idleAnimationState,                   xPos,yPos+ySeperation*line++);
+		context.fillText("  idles:"+idlePieces.length,                 xPos,yPos+ySeperation*line++);
 	}
 }
 
@@ -1037,7 +1152,6 @@ function draw(time)
 {
 	var context = canvas.getContext("2d");
 	context.clearRect (0,0,gameWidth,gameHeight);
-
 	
 	//canvas background
 	context.fillStyle = "rgb(112, 146, 190)";
@@ -1132,6 +1246,42 @@ function draw(time)
 	}
 	
 	drawInfo(context);
+	drawHighScores(context);
+}
+
+function scrollHighScores(shift)
+{
+	var maxPos = highScores.length-maxScoresOnScreen+1;
+	highScoresPos += shift;
+	if(highScoresPos > maxPos)
+		highScoresPos = maxPos;
+	if(highScoresPos < 0)
+		highScoresPos = 0;
+}
+
+function drawHighScores(context)
+{
+	var xPos = boardPos.X + boardWidth * blockSize + 220;
+	var yPos = boardPos.Y + 25;
+	var ySeperation = 25;
+	context.font = '20pt Calibri';
+	context.fillStyle = 'black';
+	
+	var maxPos = highScores.length-maxScoresOnScreen+1;
+	var lineNo = 0;
+	var scoresOnScreen = 0;
+	context.fillText("HighScores", xPos, yPos);
+	if(highScoresPos>0)
+		context.fillText("  ↑ More ↑", xPos, yPos+ySeperation*(++lineNo));
+	for (var i = highScoresPos; i < highScores.length; i++)
+	{
+		context.fillText("#"+(i+1)+":"+highScores[i].Name+" - "+highScores[i].Score, xPos, yPos+ySeperation*(++lineNo));//the y (i+1) is for header line above
+		scoresOnScreen++;
+		if(scoresOnScreen>=maxScoresOnScreen-(highScoresPos>0)-(highScoresPos<maxPos))
+			break;
+	}
+	if(highScoresPos<maxPos)
+		context.fillText("  ↓ More ↓", xPos, yPos+ySeperation*(++lineNo));
 }
 
 function drawIdleAnimation(time, context)
@@ -1290,3 +1440,18 @@ function getSlotPos(slotX, slotY)
 {
 	return new Point(slotX*blockSize + boardPos.X, slotY*blockSize + boardPos.Y);
 }
+//TetrisScore
+function TetrisScore(n,s,l,t,time,ip,stamp)
+{
+	this.Name   = n;
+	this.Score  = s;
+	this.Lines  = l;
+	this.Tetris = t;
+	this.Time   = time;
+	this.IP     = ip;
+	this.Stamp  = stamp;
+}
+TetrisScore.prototype.toString=function()
+{
+	return '[TetrisScore('+this.Name+'-'+this.Score+')]';
+};
