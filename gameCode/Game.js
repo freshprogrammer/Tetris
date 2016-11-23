@@ -130,6 +130,7 @@ pieceBlocks[2] = new Point(1,2);
 pieceBlocks[3] = new Point(1,3);
 
 //scoring
+var minHighScore = 500;
 var score = 0;
 var totalLinesCleared = 0;
 var level = 1;
@@ -230,17 +231,24 @@ tester,0   ,25,3,"05:30",67.208.46.84,2016-11-04 00:00:00`;
 
 function UploadHighScore()
 {
-	var player = prompt("Please enter your name to save your score", "player 1");
-	if(player!=null && player.length>0)
+	if(score>=minHighScore)
 	{
-		var scoreData = "?name="+player+"&score="+score+"&lines="+totalLinesCleared+"&tetris="+tetrises+"&time="+stopwatch.formattedTime();
-		var xhr = new XMLHttpRequest();
-		xhr.open('GET', scoresURL+scoreData, true);
-		xhr.onreadystatechange = function()
+		var player = prompt("Please enter your name to save your score", "player 1");
+		if(player!=null && player.length>0)
 		{
-			LoadScores();
-		};
-		xhr.send(null);
+			var scoreData = "?name="+player+"&score="+score+"&lines="+totalLinesCleared+"&tetris="+tetrises+"&time="+stopwatch.formattedTime();
+			var xhr = new XMLHttpRequest();
+			xhr.open('GET', scoresURL+scoreData, true);
+			xhr.onreadystatechange = function()
+			{
+				LoadScores();
+			};
+			xhr.send(null);
+		}
+	}
+	else
+	{
+		//do nothing... maybe add a message saying you aren't good eonugh
 	}
 }
 
